@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nuestra Línea del Tiempo ❤️ - SamRO</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    
+    <!-- FUENTE CURSIVA ELEGANTE -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+
+    <!-- LIBRERÍA DE MAPA (Leaflet CSS) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <style>
+        body {
+            background-color: #ffe6ed;
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+
+        .contenedor-linea {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .header-linea {
+            text-align: center;
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        .header-linea h1 {
+            font-family: 'Dancing Script', cursive;
+            font-size: 45px;
+            margin: 0;
+            color: #d81b60;
+        }
+
+        /* BOTÓN PARA REGRESAR AL MURO PRINCIPAL */
+        .barramenu-superior {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .btn-volver {
+            background-color: #e91e63;
+            color: white;
+            padding: 10px 18px;
+            border-radius: 20px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 14px;
+            box-shadow: 0 4px 10px rgba(233, 30, 99, 0.3);
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-volver:hover {
+            background-color: #c2185b;
+            transform: translateX(-3px);
+        }
+
+        .tarjeta-recuerdo {
+            background: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .tarjeta-recuerdo:hover {
+            transform: translateY(-2px);
+        }
+
+        .acciones-tarjeta {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+        }
+
+        .btn-accion {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-editar { background-color: #ffca28; color: #333; }
+        .btn-eliminar { background-color: #ef5350; color: white; }
+        .btn-musica { background-color: #1db954; color: white; margin-top: 10px; }
+
+        .galeria-multimedia {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .galeria-multimedia img, 
+        .galeria-multimedia video {
+            width: 100%;
+            height: 130px;
+            object-fit: cover;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+            cursor: zoom-in;
+        }
+
+        /* MODALES */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0; top: 0;
+            width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.6);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-contenido {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .cerrar-modal { float: right; font-size: 26px; font-weight: bold; cursor: pointer; color: #d81b60; }
+
+        .modal-detalle {
+            background-color: #ffffff;
+            border-radius: 16px;
+            padding: 25px;
+            width: 90%;
+            max-width: 650px;
+            max-height: 85vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .visor-principal {
+            position: relative;
+            width: 100%; height: 320px;
+            background: #000;
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden; margin: 15px 0; cursor: zoom-in;
+        }
+        .visor-principal img, .visor-principal video { max-width: 100%; max-height: 100%; object-fit: contain; }
+
+        .btn-nav-galeria {
+            position: absolute; top: 50%; transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.7); border: none; font-size: 20px;
+            padding: 10px 14px; border-radius: 50%; cursor: pointer; z-index: 10;
+        }
+        .btn-prev { left: 10px; } .btn-next { right: 10px; }
+
+        .miniaturas-grid { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 15px; }
+        .miniaturas-grid img, .miniaturas-grid video { width: 60px; height: 60px; object-fit: cover; border-radius: 6px; cursor: pointer; opacity: 0.6; }
+        .miniaturas-grid .activa { opacity: 1; border: 2px solid #d81b60; }
+
+        /* VISOR PANTALLA COMPLETA */
+        .modal-fullscreen {
+            display: none; position: fixed; z-index: 3000; top: 0; left: 0;
+            width: 100vw; height: 100vh; background-color: rgba(0, 0, 0, 0.95);
+            justify-content: center; align-items: center; flex-direction: column; user-select: none;
+        }
+        .cerrar-fullscreen { position: absolute; top: 20px; right: 25px; color: #fff; font-size: 40px; font-weight: bold; cursor: pointer; z-index: 3010; }
+        .fullscreen-medio-container { width: 90vw; height: 80vh; display: flex; justify-content: center; align-items: center; }
+        .fullscreen-medio-container img, .fullscreen-medio-container video { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; }
+        .btn-fs-nav { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255, 255, 255, 0.25); color: white; border: none; font-size: 30px; padding: 15px 20px; border-radius: 50%; cursor: pointer; z-index: 3010; }
+        .btn-fs-prev { left: 20px; } .btn-fs-next { right: 20px; }
+        .indicador-contador { color: #ccc; font-size: 14px; margin-top: 10px; }
+
+        .grupo-fecha { display: flex; gap: 8px; align-items: center; }
+        .grupo-fecha input[type="date"] { flex: 1; }
+        .btn-hoy { background-color: #e91e63; color: white; border: none; padding: 10px 14px; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; }
+        .contenedor-autocomplete { position: relative; width: 100%; }
+        .sugerencias-lista { position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid #ddd; border-radius: 8px; max-height: 180px; overflow-y: auto; z-index: 9999; display: none; }
+        .sugerencia-item { padding: 10px 12px; font-size: 13px; cursor: pointer; border-bottom: 1px solid #f0f0f0; color: #333; }
+        .mapa-visor { height: 220px; width: 100%; border-radius: 10px; margin-top: 10px; margin-bottom: 15px; border: 2px solid #ffccd5; z-index: 1; }
+        .leaflet-control-gps { background: #ffffff; border: 2px solid rgba(0,0,0,0.2); border-radius: 4px; width: 34px; height: 34px; line-height: 30px; text-align: center; font-size: 18px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <div class="contenedor-linea">
+        
+        <!-- BARRA SUPERIOR CON BOTÓN DE REGRESO -->
+        <div class="barramenu-superior">
+            <a href="/muro" class="btn-volver">
+                ⬅️ Volver a Agregar Recuerdo
+            </a>
+            <span style="font-family: 'Dancing Script', cursive; font-size: 24px;">
+                <span style="color: #ff2a85;">Sam</span><span style="color: #1e88e5;">RO</span>
+            </span>
+        </div>
+
+        <header class="header-linea">
+            <h1>📅 Nuestra Línea del Tiempo</h1>
+            <p style="color: #666; font-size: 14px;">Todos nuestros momentos especiales guardados con amor.</p>
+        </header>
+
+        {% for recuerdo in recuerdos %}
+        <div class="tarjeta-recuerdo" id="recuerdo-{{ recuerdo.id }}"
+             onclick="abrirVistaDetalle('{{ recuerdo.id }}')"
+             data-titulo="{{ recuerdo.titulo }}"
+             data-fecha="{{ recuerdo.fecha }}"
+             data-lugar="{{ recuerdo.lugar or '' }}"
+             data-nota="{{ recuerdo.nota }}"
+             data-musica="{{ recuerdo.musica or '' }}">
+            
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h3 style="margin:0; color:#d81b60;">{{ recuerdo.titulo }}</h3>
+                <span style="font-size:13px; background:#ffe6ed; padding:4px 8px; border-radius:6px; color:#d81b60; font-weight:bold;">📅 {{ recuerdo.fecha }}</span>
+            </div>
+            
+            {% if recuerdo.lugar %}
+            <p style="margin: 5px 0; font-size:13px; color:#666;">📍 {{ recuerdo.lugar }}</p>
+            {% endif %}
+            
+            <p style="line-height:1.5; color:#444;">{{ recuerdo.nota }}</p>
+
+            {% if recuerdo.musica %}
+            <div>
+                <a href="{{ recuerdo.musica }}" target="_blank" class="btn-accion btn-musica" onclick="event.stopPropagation()">
+                    🎵 Escuchar Canción
+                </a>
+            </div>
+            {% endif %}
+
+            {% if recuerdo.imagenes or recuerdo.videos or recuerdo.imagen %}
+            <div class="galeria-multimedia">
+                {% if recuerdo.imagen %}
+                <img src="{{ recuerdo.imagen }}" class="foto-recuerdo-item" alt="Foto" onclick="event.stopPropagation(); abrirPantallaCompletaDirecta('{{ recuerdo.id }}', 0)">
+                {% endif %}
+
+                {% if recuerdo.imagenes %}
+                {% for img in recuerdo.imagenes %}
+                <img src="{{ img }}" class="foto-recuerdo-item" alt="Foto del recuerdo" data-index="{{ loop.index0 }}" onclick="event.stopPropagation(); abrirPantallaCompletaDirecta('{{ recuerdo.id }}', Number(this.dataset.index))">
+                {% endfor %}
+                {% endif %}
+
+                {% if recuerdo.videos %}
+                {% for vid in recuerdo.videos %}
+                <video src="{{ vid }}" class="video-recuerdo-item" controls onclick="event.stopPropagation();"></video>
+                {% endfor %}
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <div class="acciones-tarjeta">
+                <button type="button" class="btn-accion btn-editar" onclick="event.stopPropagation(); abrirModalEditar('{{ recuerdo.id }}')">
+                    ✏️ Editar
+                </button>
+                <button type="button" class="btn-accion btn-eliminar" onclick="event.stopPropagation(); eliminarRecuerdo('{{ recuerdo.id }}')">
+                    🗑️ Eliminar
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- MODAL DETALLE DEL RECUERDO -->
+    <div id="modalDetalle" class="modal">
+        <div class="modal-detalle">
+            <span class="cerrar-modal" onclick="cerrarVistaDetalle()">&times;</span>
+            <h2 id="det-titulo" style="color: #d81b60; margin-top: 0;"></h2>
+            <p style="font-size: 14px; color: #666; margin-bottom: 5px;" id="det-fecha-lugar"></p>
+
+            <div id="det-contenedor-visor" class="visor-principal" style="display: none;" onclick="abrirPantallaCompleta()">
+                <button class="btn-nav-galeria btn-prev" onclick="event.stopPropagation(); cambiarArchivoVisor(-1)">❮</button>
+                <div id="det-medio-activo" style="width:100%; height:100%; display:flex; justify-content:center; align-items:center;"></div>
+                <button class="btn-nav-galeria btn-next" onclick="event.stopPropagation(); cambiarArchivoVisor(1)">❯</button>
+            </div>
+
+            <div id="det-miniaturas" class="miniaturas-grid"></div>
+            <p id="det-nota" style="line-height: 1.6; color: #333; font-size: 15px; background: #fff5f8; padding: 15px; border-radius: 10px; border-left: 4px solid #e91e63;"></p>
+            <div id="det-musica-container" style="margin-top: 15px;"></div>
+        </div>
+    </div>
+
+    <!-- MODAL A PANTALLA COMPLETA REAL -->
+    <div id="modalFullscreen" class="modal-fullscreen">
+        <span class="cerrar-fullscreen" onclick="cerrarPantallaCompleta()">&times;</span>
+        <button class="btn-fs-nav btn-fs-prev" onclick="cambiarArchivoVisor(-1)">❮</button>
+        <div id="fullscreen-medio-activo" class="fullscreen-medio-container"></div>
+        <button class="btn-fs-nav btn-fs-next" onclick="cambiarArchivoVisor(1)">❯</button>
+        <div id="fs-contador" class="indicador-contador"></div>
+    </div>
+
+    <!-- MODAL PARA EDITAR -->
+    <div id="modalEditar" class="modal">
+        <div class="modal-contenido">
+            <span class="cerrar-modal" onclick="cerrarModal()">&times;</span>
+            <h2>✏️ Editar Recuerdo</h2>
+            <form id="formEditar" method="POST" enctype="multipart/form-data" class="form-recuerdo">
+                <input type="text" id="edit-titulo" name="titulo" placeholder="Título" required>
+                
+                <div class="grupo-fecha">
+                    <input type="date" id="edit-fecha" name="fecha" required>
+                    <button type="button" class="btn-hoy" onclick="establecerFechaHoy('edit-fecha')">📅 Hoy</button>
+                </div>
+                
+                <div class="contenedor-autocomplete">
+                    <input type="text" id="edit-lugar" name="lugar" placeholder="📍 Lugar" autocomplete="off">
+                    <div id="sugerencias-editar" class="sugerencias-lista"></div>
+                </div>
+
+                <div id="mapa-editar" class="mapa-visor"></div>
+                <textarea id="edit-nota" name="nota" rows="4" required></textarea>
+                <input type="url" id="edit-musica" name="musica" placeholder="🎵 Link de canción (Opcional)">
+
+                <label style="font-size: 14px; color: #555;">📸 🎥 Cambiar Fotos/Videos (Hasta 5):</label>
+                <input type="file" name="archivos" accept="image/*,video/*" multiple onchange="validarLimiteArchivos(this)">
+
+                <button type="submit" style="margin-top: 15px;">Guardar Cambios 💾</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- LIBRERÍA DE MAPA INTERACTIVO -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        let mapEditar, markerEditar;
+        let listaMediosActual = [];
+        let indiceMedioActual = 0;
+        let startX = 0;
+
+        function validarLimiteArchivos(input) {
+            if (input.files.length > 5) {
+                alert("Solo puedes seleccionar un máximo de 5 fotos o videos por recuerdo.");
+                input.value = "";
+            }
+        }
+
+        function establecerFechaHoy(inputId) {
+            const hoy = new Date();
+            const año = hoy.getFullYear();
+            const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+            const dia = String(hoy.getDate()).padStart(2, '0');
+            document.getElementById(inputId).value = `${año}-${mes}-${dia}`;
+        }
+
+        function prepararListaMedios(tarjeta) {
+            const imgs = Array.from(tarjeta.querySelectorAll('.foto-recuerdo-item')).map(el => ({ tipo: 'imagen', url: el.src }));
+            const vids = Array.from(tarjeta.querySelectorAll('.video-recuerdo-item')).map(el => ({ tipo: 'video', url: el.src }));
+            listaMediosActual = [...imgs, ...vids];
+        }
+
+        function abrirVistaDetalle(id) {
+            const tarjeta = document.getElementById(`recuerdo-${id}`);
+            
+            document.getElementById('det-titulo').innerText = tarjeta.getAttribute('data-titulo');
+            
+            const fecha = tarjeta.getAttribute('data-fecha');
+            const lugar = tarjeta.getAttribute('data-lugar');
+            document.getElementById('det-fecha-lugar').innerText = `📅 ${fecha} ${lugar ? ' • 📍 ' + lugar : ''}`;
+            
+            document.getElementById('det-nota').innerText = tarjeta.getAttribute('data-nota');
+
+            const musica = tarjeta.getAttribute('data-musica');
+            const musContainer = document.getElementById('det-musica-container');
+            if (musica) {
+                musContainer.innerHTML = `<a href="${musica}" target="_blank" class="btn-accion btn-musica">🎵 Escuchar canción guardada</a>`;
+            } else {
+                musContainer.innerHTML = '';
+            }
+
+            prepararListaMedios(tarjeta);
+            indiceMedioActual = 0;
+
+            const visorContainer = document.getElementById('det-contenedor-visor');
+            const miniaturasContainer = document.getElementById('det-miniaturas');
+            miniaturasContainer.innerHTML = '';
+
+            if (listaMediosActual.length > 0) {
+                visorContainer.style.display = 'flex';
+                
+                listaMediosActual.forEach((item, index) => {
+                    let thumb;
+                    if (item.tipo === 'imagen') {
+                        thumb = document.createElement('img');
+                        thumb.src = item.url;
+                    } else {
+                        thumb = document.createElement('video');
+                        thumb.src = item.url;
+                    }
+                    thumb.onclick = (e) => { e.stopPropagation(); mostrarMedioVisor(index); };
+                    miniaturasContainer.appendChild(thumb);
+                });
+
+                mostrarMedioVisor(0);
+            } else {
+                visorContainer.style.display = 'none';
+            }
+
+            document.getElementById('modalDetalle').style.display = 'flex';
+        }
+
+        function abrirPantallaCompletaDirecta(idRecuerdo, indiceFoto) {
+            const tarjeta = document.getElementById(`recuerdo-${idRecuerdo}`);
+            prepararListaMedios(tarjeta);
+            indiceMedioActual = indiceFoto;
+            
+            document.getElementById('modalFullscreen').style.display = 'flex';
+            mostrarMedioVisor(indiceMedioActual);
+        }
+
+        function mostrarMedioVisor(index) {
+            if (listaMediosActual.length === 0) return;
+            indiceMedioActual = index;
+            const item = listaMediosActual[index];
+            const contenedor = document.getElementById('det-medio-activo');
+            const contenedorFS = document.getElementById('fullscreen-medio-activo');
+            
+            if (contenedor) contenedor.innerHTML = '';
+            if (contenedorFS) contenedorFS.innerHTML = '';
+
+            let elemVisor, elemFS;
+
+            if (item.tipo === 'imagen') {
+                elemVisor = document.createElement('img');
+                elemVisor.src = item.url;
+                elemFS = document.createElement('img');
+                elemFS.src = item.url;
+            } else {
+                elemVisor = document.createElement('video');
+                elemVisor.src = item.url;
+                elemVisor.controls = true;
+                elemFS = document.createElement('video');
+                elemFS.src = item.url;
+                elemFS.controls = true;
+                elemFS.autoplay = true;
+            }
+
+            if (contenedor) contenedor.appendChild(elemVisor);
+            if (contenedorFS) contenedorFS.appendChild(elemFS);
+
+            const thumbs = document.querySelectorAll('#det-miniaturas > *');
+            thumbs.forEach((t, idx) => {
+                if (idx === index) t.classList.add('activa');
+                else t.classList.remove('activa');
+            });
+
+            const contador = document.getElementById('fs-contador');
+            if (contador) {
+                contador.innerText = `${index + 1} / ${listaMediosActual.length}`;
+            }
+        }
+
+        function cambiarArchivoVisor(direccion) {
+            if (listaMediosActual.length === 0) return;
+            indiceMedioActual = (indiceMedioActual + direccion + listaMediosActual.length) % listaMediosActual.length;
+            mostrarMedioVisor(indiceMedioActual);
+        }
+
+        function abrirPantallaCompleta() {
+            if (listaMediosActual.length === 0) return;
+            document.getElementById('modalFullscreen').style.display = 'flex';
+            mostrarMedioVisor(indiceMedioActual);
+        }
+
+        function cerrarPantallaCompleta() {
+            document.getElementById('modalFullscreen').style.display = 'none';
+        }
+
+        function cerrarVistaDetalle() {
+            document.getElementById('modalDetalle').style.display = 'none';
+        }
+
+        document.addEventListener('keydown', (e) => {
+            const modalFS = document.getElementById('modalFullscreen');
+            if (modalFS && modalFS.style.display === 'flex') {
+                if (e.key === 'ArrowRight') cambiarArchivoVisor(1);
+                if (e.key === 'ArrowLeft') cambiarArchivoVisor(-1);
+                if (e.key === 'Escape') cerrarPantallaCompleta();
+            }
+        });
+
+        const fsContainer = document.getElementById('modalFullscreen');
+        fsContainer.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; });
+        fsContainer.addEventListener('touchend', (e) => {
+            const endX = e.changedTouches[0].clientX;
+            const diffX = startX - endX;
+            if (Math.abs(diffX) > 40) {
+                if (diffX > 0) cambiarArchivoVisor(1);
+                else cambiarArchivoVisor(-1);
+            }
+        });
+
+        async function obtenerNombreUbicacion(lat, lng, inputElem) {
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+                const data = await res.json();
+                if (data && data.display_name) {
+                    inputElem.value = data.display_name.split(',').slice(0, 3).join(',');
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        function activarGPS(inputId, mapaObj, marcadorObj) {
+            const inputElem = document.getElementById(inputId);
+            if ("geolocation" in navigator) {
+                inputElem.value = "Obteniendo ubicación del GPS...";
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        mapaObj.setView([lat, lng], 16);
+                        marcadorObj.setLatLng([lat, lng]);
+                        obtenerNombreUbicacion(lat, lng, inputElem);
+                    },
+                    () => { alert("No se pudo obtener la ubicación GPS."); inputElem.value = ""; },
+                    { enableHighAccuracy: true }
+                );
+            }
+        }
+
+        function agregarBotonGPSInterno(mapaObj, marcadorObj, inputId) {
+            const gpsControl = L.control({ position: 'topleft' });
+            gpsControl.onAdd = function() {
+                const div = L.DomUtil.create('div', 'leaflet-control-gps');
+                div.innerHTML = '🎯';
+                L.DomEvent.disableClickPropagation(div);
+                L.DomEvent.on(div, 'click', function() { activarGPS(inputId, mapaObj, marcadorObj); });
+                return div;
+            };
+            gpsControl.addTo(mapaObj);
+        }
+
+        function inicializarMapaEditar() {
+            const defaultLat = -12.0651;
+            const defaultLng = -75.2049;
+
+            mapEditar = L.map('mapa-editar').setView([defaultLat, defaultLng], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapEditar);
+            markerEditar = L.marker([defaultLat, defaultLng], { draggable: true }).addTo(mapEditar);
+            agregarBotonGPSInterno(mapEditar, markerEditar, 'edit-lugar');
+
+            mapEditar.on('click', (e) => {
+                markerEditar.setLatLng(e.latlng);
+                obtenerNombreUbicacion(e.latlng.lat, e.latlng.lng, document.getElementById('edit-lugar'));
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            inicializarMapaEditar();
+        });
+
+        function abrirModalEditar(id) {
+            const tarjeta = document.getElementById(`recuerdo-${id}`);
+            document.getElementById('edit-titulo').value = tarjeta.getAttribute('data-titulo');
+            document.getElementById('edit-fecha').value = tarjeta.getAttribute('data-fecha');
+            document.getElementById('edit-lugar').value = tarjeta.getAttribute('data-lugar');
+            document.getElementById('edit-nota').value = tarjeta.getAttribute('data-nota');
+            document.getElementById('edit-musica').value = tarjeta.getAttribute('data-musica');
+            
+            document.getElementById('formEditar').action = `/recuerdos/${id}/editar`;
+            document.getElementById('modalEditar').style.display = 'flex';
+            setTimeout(() => { mapEditar.invalidateSize(); }, 200);
+        }
+
+        function cerrarModal() { document.getElementById('modalEditar').style.display = 'none'; }
+
+        async function eliminarRecuerdo(id) {
+            if (confirm("¿Estás seguro de que deseas eliminar este recuerdo?")) {
+                const response = await fetch(`/recuerdos/${id}`, { method: 'DELETE' });
+                if (response.ok) location.reload();
+            }
+        }
+    </script>
+
+</body>
+</html>

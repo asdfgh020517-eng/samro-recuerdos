@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuración de Cuenta - SamRO ❤️</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: #ffe6ed;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .card-config {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 18px;
+            box-shadow: 0 10px 25px rgba(216, 27, 96, 0.15);
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            border: 1px solid #ffccd5;
+        }
+
+        .titulo-config {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 15px;
+            gap: 10px;
+        }
+
+        /* TARJETA DE CREDENCIALES ACTUALES */
+        .info-actual {
+            background: #fdf2f4;
+            border: 1px dashed #e91e63;
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: left;
+            font-size: 13px;
+            color: #444;
+        }
+
+        .info-actual p {
+            margin: 5px 0;
+        }
+
+        .info-actual span {
+            font-weight: bold;
+            color: #d81b60;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 13px;
+            color: #333;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 11px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+
+        .btn-guardar {
+            width: 100%;
+            background-color: #e91e63;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 5px;
+            transition: background-color 0.2s;
+        }
+
+        .btn-guardar:hover {
+            background-color: #c2185b;
+        }
+
+        .btn-volver {
+            display: block;
+            margin-top: 15px;
+            color: #1e88e5;
+            text-decoration: none;
+            font-size: 13px;
+        }
+
+        .btn-volver:hover {
+            text-decoration: underline;
+        }
+
+        .mensaje-exito {
+            color: #2e7d32;
+            font-size: 13px;
+            margin-bottom: 15px;
+            background: #e8f5e9;
+            padding: 8px;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card-config">
+        <div class="titulo-config">
+            <span style="font-size: 24px;">❤️</span>
+            <h1 style="font-family: 'Dancing Script', cursive; font-size: 32px; margin: 0; color: #ff2a85;">
+                Credenciales Locales
+            </h1>
+            <span style="font-size: 24px;">❤️</span>
+        </div>
+
+        <!-- MOSTRAR CREDENCIALES ACTUALES -->
+        <div class="info-actual">
+            <p>👤 Usuario actual: <span>{{ usuario_actual }}</span></p>
+            <p>🔑 Contraseña actual: <span>{{ password_actual }}</span></p>
+        </div>
+
+        <script>
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('exito')) {
+                document.write('<p class="mensaje-exito">✨ ¡Credenciales actualizadas con éxito! ✨</p>');
+            }
+        </script>
+
+        <form action="/actualizar-credenciales" method="POST">
+            <div class="form-group">
+                <label><span>❤️</span> Nuevo Usuario: <span>❤️</span></label>
+                <input type="text" name="usuario_nuevo" required placeholder="Escribe el nuevo usuario">
+            </div>
+
+            <div class="form-group">
+                <label><span>❤️</span> Nueva Contraseña: <span>❤️</span></label>
+                <input type="text" name="password_nueva" required placeholder="Escribe la nueva contraseña">
+            </div>
+
+            <button type="submit" class="btn-guardar">Guardar Nuevos Datos 💖</button>
+        </form>
+
+        <a href="/muro" class="btn-volver">⬅️ Volver al Muro de Recuerdos</a>
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,75 @@
+[
+    {
+        "id": 7,
+        "titulo": "Vshsvw",
+        "fecha": "2026-07-23",
+        "lugar": "Avenida Los Ángeles, San Agustín de Cajas, Huancayo",
+        "nota": "Bsbsbw",
+        "musica": "https://youtu.be/Lp-uY6zcgfY?si=WjdvACQJob-YkEYz",
+        "imagenes": [
+            "/static/uploads/17848644061014773729014963345433.jpg",
+            "/static/uploads/1000230058.png",
+            "/static/uploads/1000229935.jpg",
+            "/static/uploads/1000229933.jpg"
+        ],
+        "videos": [
+            "/static/uploads/mensaje_voz.webm"
+        ]
+    },
+    {
+        "id": 6,
+        "titulo": "dasdas",
+        "fecha": "2026-07-23",
+        "lugar": "Pasaje Rosario, San Agustín de Cajas, Huancayo",
+        "nota": "sadasd",
+        "musica": "https://www.youtube.com/watch?v=TLBkZG57JB8&list=RDTLBkZG57JB8&start_radio=1",
+        "imagenes": [
+            "/static/uploads/Verifica tu vehículo antes de comprar.png",
+            "/static/uploads/WhatsApp Image 2025-09-03 at 8.24.49 PM.jpeg",
+            "/static/uploads/WhatsApp Image 2026-04-20 at 12.11.25 PM.jpeg"
+        ],
+        "videos": []
+    },
+    {
+        "id": 5,
+        "titulo": "samy te amo",
+        "fecha": "2026-07-23",
+        "lugar": "Pasaje Rosario, San Agustín de Cajas, Huancayo",
+        "nota": "salimos por que nos amamos",
+        "musica": "https://www.youtube.com/watch?v=TLBkZG57JB8&list=RDTLBkZG57JB8&start_radio=1",
+        "imagen": "/static/uploads/ChatGPT Image 29 abr 2026, 13_25_07.png"
+    },
+    {
+        "id": 4,
+        "titulo": "Amor",
+        "fecha": "2026-07-06",
+        "lugar": "Cajas",
+        "nota": "Vida",
+        "musica": "https://youtu.be/Lp-uY6zcgfY?si=WjdvACQJob-YkEYz",
+        "imagen": "/static/uploads/1000229657.jpg"
+    },
+    {
+        "id": 3,
+        "titulo": "fsdf",
+        "fecha": "2026-07-11",
+        "lugar": "fsdf",
+        "nota": "dsfsd",
+        "imagen": "/static/uploads/WhatsApp Image 2026-04-20 at 12.11.25 PM.jpeg"
+    },
+    {
+        "id": 2,
+        "titulo": "salida al cine",
+        "fecha": "2026-07-07",
+        "lugar": "cineplanet",
+        "nota": "dfsf",
+        "imagen": "/static/uploads/WhatsApp Image 2025-09-03 at 8.24.49 PM.jpeg"
+    },
+    {
+        "id": 1,
+        "titulo": "Nuestro primer día",
+        "fecha": "2026-01-01",
+        "lugar": "Huancayo",
+        "nota": "Un día super especial donde comenzamos este gran proyecto juntos.",
+        "imagen": null
+    }
+]

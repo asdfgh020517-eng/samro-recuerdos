@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión - SamRO Recuerdos ❤️</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: #ffe6ed;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .card-login {
+            background: #ffffff;
+            padding: 35px 30px;
+            border-radius: 18px;
+            box-shadow: 0 10px 25px rgba(216, 27, 96, 0.15);
+            width: 90%;
+            max-width: 380px;
+            text-align: center;
+            border: 1px solid #ffccd5;
+        }
+
+        .titulo-login {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+            gap: 10px;
+        }
+
+        /* APARTADO DE GOOGLE */
+        .apartado-google {
+            background: #fdf2f4;
+            border: 1px dashed #e91e63;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .apartado-google p {
+            margin: 0 0 10px 0;
+            font-size: 13px;
+            color: #d81b60;
+            font-weight: bold;
+        }
+
+        .btn-google {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            background-color: #ffffff;
+            color: #444;
+            border: 1px solid #ddd;
+            padding: 11px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            text-decoration: none;
+            box-sizing: border-box;
+            transition: background-color 0.2s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .btn-google:hover {
+            background-color: #f7f7f7;
+        }
+
+        .btn-google img {
+            width: 18px;
+            height: 18px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 13px;
+            color: #333;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 11px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+
+        .btn-ingresar {
+            width: 100%;
+            background-color: #e91e63;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .btn-ingresar:hover {
+            background-color: #c2185b;
+        }
+
+        .separador {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 15px 0;
+            color: #888;
+            font-size: 12px;
+        }
+
+        .separador::before, .separador::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid #eee;
+        }
+
+        .separador:not(:empty)::before { margin-right: .25em; }
+        .separador:not(:empty)::after { margin-left: .25em; }
+
+        .mensaje-error {
+            color: #ef5350;
+            font-size: 13px;
+            margin-bottom: 15px;
+            background: #ffebee;
+            padding: 8px;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card-login">
+        <div class="titulo-login">
+            <span style="font-size: 28px;">❤️</span>
+            <h1 style="font-family: 'Dancing Script', cursive; font-size: 45px; margin: 0;">
+                <span style="color: #ff2a85;">Sam</span><span style="color: #1e88e5;">RO</span>
+            </h1>
+            <span style="font-size: 28px;">❤️</span>
+        </div>
+
+        <script>
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('error')) {
+                document.write('<p class="mensaje-error">❌ Error al iniciar sesión con Google.</p>');
+            }
+        </script>
+
+        <!-- APARTADO PARA REGISTRARSE / ENTRAR CON GOOGLE (GMAIL) -->
+        <div class="apartado-google">
+            <p>✨ Acceso rápido y seguro ✨</p>
+            <a href="/login/google" class="btn-google">
+                <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" alt="Google">
+                Registrarse / Entrar con Google
+            </a>
+        </div>
+
+        <div class="separador">O usa tus credenciales</div>
+
+        <form action="/login" method="POST">
+            <div class="form-group">
+                <label><span>❤️</span> Usuario: <span>❤️</span></label>
+                <input type="text" name="usuario" required placeholder="Tu usuario">
+            </div>
+
+            <div class="form-group">
+                <label><span>❤️</span> Contraseña: <span>❤️</span></label>
+                <input type="password" name="password" required placeholder="••••••••">
+            </div>
+
+            <button type="submit" class="btn-ingresar">Ingresar 💖</button>
+        </form>
+    </div>
+
+</body>
+</html>

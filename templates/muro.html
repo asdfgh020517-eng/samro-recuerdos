@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SamRO Recuerdos ❤️</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    
+    <!-- FUENTE CURSIVA ELEGANTE (DANCING SCRIPT) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+
+    <!-- LIBRERÍA DE MAPA (Leaflet CSS) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <style>
+        body {
+            background-color: #ffe6ed;
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            overflow-x: hidden;
+        }
+
+        .layout-principal {
+            display: grid;
+            grid-template-columns: 1fr minmax(320px, 550px) 1fr;
+            gap: 20px;
+            align-items: start;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .collage-lateral {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .tarjeta-foto-collage {
+            background: #fff;
+            padding: 8px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            transform: rotate(var(--rotacion, 0deg));
+            transition: transform 0.3s ease;
+            cursor: pointer;
+        }
+
+        .tarjeta-foto-collage:hover {
+            transform: scale(1.05) rotate(0deg);
+            z-index: 5;
+        }
+
+        .tarjeta-foto-collage img {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .tarjeta-foto-collage p {
+            margin: 5px 0 0 0;
+            font-size: 12px;
+            font-weight: bold;
+            color: #d81b60;
+            text-align: center;
+        }
+
+        .grupo-fecha {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .grupo-fecha input[type="date"] {
+            flex: 1;
+        }
+
+        .btn-hoy {
+            background-color: #e91e63;
+            color: white;
+            border: none;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .btn-hoy:hover {
+            background-color: #c2185b;
+        }
+
+        /* ESTILO PARA LOS BOTONES DE LA CABECERA */
+        .acciones-header {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .btn-config {
+            background-color: #1e88e5;
+            color: white;
+            padding: 8px 14px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+
+        .btn-config:hover {
+            background-color: #1565c0;
+        }
+
+        /* ESTILO DEL BOTÓN MORADO PARA ABRIR OTRA PESTAÑA */
+        .contenedor-btn-ver-recuerdos {
+            text-align: center;
+            margin: 25px 0;
+        }
+
+        .btn-ver-mis-recuerdos {
+            background: linear-gradient(135deg, #6a1b9a 0%, #8e24aa 100%);
+            color: #ffffff;
+            border: none;
+            padding: 16px 28px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(106, 27, 154, 0.4);
+            transition: all 0.3s ease;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            text-decoration: none;
+            box-sizing: border-box;
+        }
+
+        .btn-ver-mis-recuerdos:hover {
+            background: linear-gradient(135deg, #4a148c 0%, #7b1fa2 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(106, 27, 154, 0.5);
+            color: #ffffff;
+        }
+
+        .contenedor-autocomplete { position: relative; width: 100%; }
+        .sugerencias-lista {
+            position: absolute; top: 100%; left: 0; right: 0; background: #fff;
+            border: 1px solid #ddd; border-radius: 8px; max-height: 180px;
+            overflow-y: auto; z-index: 9999; box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            margin-top: -8px; display: none;
+        }
+        .sugerencia-item { padding: 10px 12px; font-size: 13px; cursor: pointer; border-bottom: 1px solid #f0f0f0; color: #333; }
+        .sugerencia-item:hover { background-color: #ffe6ed; color: #d81b60; }
+        .mapa-visor { height: 220px; width: 100%; border-radius: 10px; margin-top: 10px; margin-bottom: 15px; border: 2px solid #ffccd5; z-index: 1; }
+        .leaflet-control-gps { background: #ffffff; border: 2px solid rgba(0,0,0,0.2); border-radius: 4px; width: 34px; height: 34px; line-height: 30px; text-align: center; font-size: 18px; cursor: pointer; box-shadow: 0 1px 5px rgba(0,0,0,0.4); user-select: none; }
+        .leaflet-control-gps:hover { background: #f4f4f4; }
+
+        @media (max-width: 900px) {
+            .layout-principal { grid-template-columns: 1fr; }
+            .collage-lateral { flex-direction: row; flex-wrap: wrap; justify-content: center; }
+            .tarjeta-foto-collage { width: 45%; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ENCABEZADO CON NOMBRE Y ACCESOS DE CONFIGURACIÓN Y SALIDA -->
+    <header class="encabezado-muro">
+        <h1>
+            ❤️ 
+            <span style="font-family: 'Dancing Script', cursive; font-size: 48px; letter-spacing: 1px;">
+                <span style="color: #ff2a85;">Sam</span><span style="color: #1e88e5;">RO</span>
+            </span>
+            <span style="color: #d81b60; font-family: 'Dancing Script', cursive; font-size: 44px; margin-left: 8px;">Recuerdos</span> 
+            ❤️
+        </h1>
+        <div class="acciones-header">
+            <a href="/configuracion" class="btn-config">⚙️ Ajustes</a>
+            <a href="/logout" class="btn-salir">Cerrar Sesión</a>
+        </div>
+    </header>
+
+    <div class="layout-principal">
+
+        <!-- COLLAGE IZQUIERDO -->
+        <div class="collage-lateral" id="collageIzquierdo"></div>
+
+        <!-- CONTENEDOR CENTRAL (FORMULARIO) -->
+        <div class="contenedor-muro">
+            <section class="seccion-crear">
+                <h2>✨ Agregar Nuevo Recuerdo</h2>
+                <form action="/crear-recuerdo" method="POST" enctype="multipart/form-data" class="form-recuerdo">
+                    <input type="text" name="titulo" placeholder="Título del recuerdo" required>
+                    
+                    <div class="grupo-fecha">
+                        <input type="date" id="fecha-input" name="fecha" required>
+                        <button type="button" class="btn-hoy" onclick="establecerFechaHoy('fecha-input')">📅 Hoy</button>
+                    </div>
+                    
+                    <div class="contenedor-autocomplete">
+                        <input type="text" id="lugar-input" name="lugar" placeholder="📍 Buscar lugar o usar el botón GPS en el mapa..." autocomplete="off">
+                        <div id="sugerencias-crear" class="sugerencias-lista"></div>
+                    </div>
+                    
+                    <div id="mapa-crear" class="mapa-visor"></div>
+
+                    <textarea name="nota" placeholder="📝 Escribe la historia..." rows="4" required></textarea>
+                    
+                    <input type="url" name="musica" placeholder="🎵 Link de canción (YouTube, Spotify, etc. - Opcional)">
+
+                    <label style="font-size: 14px; color: #555; display: block; margin-bottom: 5px;">📸 🎥 🎙️ Fotos, Videos o Mensaje de Voz:</label>
+                    
+                    <!-- BOTONES SEPARADOS DE CÁMARA Y GALERÍA -->
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 8px;">
+                        <input type="file" id="input-camara" name="archivos" accept="image/*" capture="environment" onchange="manejarArchivosSeleccionados(this)" style="display: none;">
+                        <button type="button" onclick="document.getElementById('input-camara').click()" style="background: linear-gradient(135deg, #ff2a85 0%, #e91e63 100%); color: white; border: none; padding: 10px 14px; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 10px rgba(233, 30, 99, 0.3);">
+                            <span>📷</span> <span>Tomar Foto</span>
+                        </button>
+
+                        <input type="file" id="input-galeria" name="archivos" accept="image/*,video/*" multiple onchange="manejarArchivosSeleccionados(this)" style="display: none;">
+                        <button type="button" onclick="document.getElementById('input-galeria').click()" style="background: linear-gradient(135deg, #1e88e5 0%, #1565c0 100%); color: white; border: none; padding: 10px 14px; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 10px rgba(30, 136, 229, 0.3);">
+                            <span>🖼️</span> <span>Galería / Videos</span>
+                        </button>
+                    </div>
+
+                    <!-- GRABACIÓN DE AUDIO -->
+                    <div style="background: #fdf2f4; border: 1px dashed #e91e63; padding: 10px; border-radius: 8px; margin-bottom: 10px;">
+                        <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 5px;">
+                            <button type="button" id="btn-grabar" onclick="iniciarGrabacion()" style="background-color: #2e7d32; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer;">
+                                🎙️ Grabar Audio
+                            </button>
+                            <button type="button" id="btn-detener" onclick="detenerGrabacion()" disabled style="background-color: #c62828; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: not-allowed; opacity: 0.6;">
+                                ⏹️ Detener
+                            </button>
+                            <span id="estado-grabacion" style="font-size: 12px; color: #666;">Micrófono listo</span>
+                        </div>
+                        <audio id="audio-preview" controls style="width: 100%; display: none; margin-top: 5px; height: 35px;"></audio>
+                    </div>
+
+                    <span id="texto-archivos" style="font-size: 13px; color: #666; display: block; margin-bottom: 5px;">Ningún archivo o audio seleccionado</span>
+
+                    <button type="submit">Publicar Recuerdo 💖</button>
+                </form>
+            </section>
+
+            <!-- BOTÓN MORADO PARA ABRIR RECUERDOS EN OTRA PESTAÑA -->
+            <div class="contenedor-btn-ver-recuerdos">
+                <a href="/linea-del-tiempo" target="_blank" class="btn-ver-mis-recuerdos">
+                    <span>🔮</span> <span>Ver mis recuerdos en otra pestaña</span> <span>🚀</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- COLLAGE DERECHO -->
+        <div class="collage-lateral" id="collageDerecho"></div>
+
+    </div>
+
+    <!-- ELEMENTOS OCULTOS PARA QUE EL JS MONTE EL COLLAGE LATERAL DE FOTOS -->
+    <div style="display:none;">
+        {% for recuerdo in recuerdos %}
+            {% if recuerdo.imagenes %}
+                {% for img in recuerdo.imagenes %}
+                    <img src="{{ img }}" class="foto-recuerdo-item" data-titulo="{{ recuerdo.titulo }}">
+                {% endfor %}
+            {% elif recuerdo.imagen %}
+                <img src="{{ recuerdo.imagen }}" class="foto-recuerdo-item" data-titulo="{{ recuerdo.titulo }}">
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    <!-- LIBRERÍA DE MAPA INTERACTIVO -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        let mapCrear, markerCrear;
+        let mediaRecorder;
+        let audioChunks = [];
+        let audioBlobFinal = null;
+
+        function manejarArchivosSeleccionados(input) {
+            const textoSpan = document.getElementById('texto-archivos');
+            if (input.files.length > 5) {
+                alert("Solo puedes seleccionar un máximo de 5 fotos o videos por recuerdo.");
+                input.value = "";
+                textoSpan.innerText = "Ningún archivo seleccionado";
+                return;
+            }
+
+            if (input.files.length > 0) {
+                if (input.files.length === 1) {
+                    textoSpan.innerText = `Archivo: ${input.files[0].name}`;
+                } else {
+                    textoSpan.innerText = `${input.files.length} archivos seleccionados`;
+                }
+            } else {
+                textoSpan.innerText = "Ningún archivo seleccionado";
+            }
+        }
+
+        async function iniciarGrabacion() {
+            audioChunks = [];
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+
+                mediaRecorder.ondataavailable = event => {
+                    audioChunks.push(event.data);
+                };
+
+                mediaRecorder.onstop = () => {
+                    audioBlobFinal = new Blob(audioChunks, { type: 'audio/webm' });
+                    const audioUrl = URL.createObjectURL(audioBlobFinal);
+                    const audioElement = document.getElementById('audio-preview');
+                    audioElement.src = audioUrl;
+                    audioElement.style.display = 'block';
+                    document.getElementById('texto-archivos').innerText = "🎤 Audio grabado listo para enviar";
+                };
+
+                mediaRecorder.start();
+                document.getElementById('btn-grabar').disabled = true;
+                document.getElementById('btn-grabar').style.opacity = '0.6';
+                document.getElementById('btn-detener').disabled = false;
+                document.getElementById('btn-detener').style.cursor = 'pointer';
+                document.getElementById('btn-detener').style.opacity = '1';
+                document.getElementById('estado-grabacion').innerText = "🔴 Grabando voz...";
+            } catch (err) {
+                alert("No se pudo acceder al micrófono. Asegúrate de dar permisos.");
+                console.error(err);
+            }
+        }
+
+        function detenerGrabacion() {
+            if (mediaRecorder && mediaRecorder.state !== "inactive") {
+                mediaRecorder.stop();
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                document.getElementById('btn-grabar').disabled = false;
+                document.getElementById('btn-grabar').style.opacity = '1';
+                document.getElementById('btn-detener').disabled = true;
+                document.getElementById('btn-detener').style.opacity = '0.6';
+                document.getElementById('estado-grabacion').innerText = "✅ Grabación finalizada";
+            }
+        }
+
+        document.querySelector('.form-recuerdo').addEventListener('submit', function(e) {
+            if (audioBlobFinal) {
+                const myFile = new File([audioBlobFinal], "mensaje_voz.webm", { type: 'audio/webm' });
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(myFile);
+                
+                const inputOcultoAudio = document.createElement('input');
+                inputOcultoAudio.type = 'file';
+                inputOcultoAudio.name = 'archivos';
+                inputOcultoAudio.style.display = 'none';
+                inputOcultoAudio.files = dataTransfer.files;
+                
+                this.appendChild(inputOcultoAudio);
+            }
+        });
+
+        function establecerFechaHoy(inputId) {
+            const hoy = new Date();
+            const año = hoy.getFullYear();
+            const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+            const dia = String(hoy.getDate()).padStart(2, '0');
+            document.getElementById(inputId).value = `${año}-${mes}-${dia}`;
+        }
+
+        async function obtenerNombreUbicacion(lat, lng, inputElem) {
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+                const data = await res.json();
+                if (data && data.display_name) {
+                    inputElem.value = data.display_name.split(',').slice(0, 3).join(',');
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        function activarGPS(inputId, mapaObj, marcadorObj) {
+            const inputElem = document.getElementById(inputId);
+            if ("geolocation" in navigator) {
+                inputElem.value = "Obteniendo ubicación del GPS...";
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        mapaObj.setView([lat, lng], 16);
+                        marcadorObj.setLatLng([lat, lng]);
+                        obtenerNombreUbicacion(lat, lng, inputElem);
+                    },
+                    () => { alert("No se pudo obtener la ubicación GPS."); inputElem.value = ""; },
+                    { enableHighAccuracy: true }
+                );
+            }
+        }
+
+        function agregarBotonGPSInterno(mapaObj, marcadorObj, inputId) {
+            const gpsControl = L.control({ position: 'topleft' });
+            gpsControl.onAdd = function() {
+                const div = L.DomUtil.create('div', 'leaflet-control-gps');
+                div.innerHTML = '🎯';
+                L.DomEvent.disableClickPropagation(div);
+                L.DomEvent.on(div, 'click', function() { activarGPS(inputId, mapaObj, marcadorObj); });
+                return div;
+            };
+            gpsControl.addTo(mapaObj);
+        }
+
+        function inicializarMapas() {
+            const defaultLat = -12.0651;
+            const defaultLng = -75.2049;
+
+            mapCrear = L.map('mapa-crear').setView([defaultLat, defaultLng], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapCrear);
+            markerCrear = L.marker([defaultLat, defaultLng], { draggable: true }).addTo(mapCrear);
+            agregarBotonGPSInterno(mapCrear, markerCrear, 'lugar-input');
+
+            mapCrear.on('click', (e) => {
+                markerCrear.setLatLng(e.latlng);
+                obtenerNombreUbicacion(e.latlng.lat, e.latlng.lng, document.getElementById('lugar-input'));
+            });
+        }
+
+        function configurarAutocompletado(inputId, contenedorId, mapaObj, marcadorObj) {
+            const input = document.getElementById(inputId);
+            const contenedor = document.getElementById(contenedorId);
+            let timer;
+
+            if (!input || !contenedor) return;
+
+            input.addEventListener('input', () => {
+                clearTimeout(timer);
+                const query = input.value.trim();
+                if (query.length < 3) { contenedor.style.display = 'none'; return; }
+
+                timer = setTimeout(async () => {
+                    try {
+                        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`);
+                        const data = await res.json();
+                        contenedor.innerHTML = '';
+                        if (data.length === 0) { contenedor.style.display = 'none'; return; }
+
+                        data.forEach(item => {
+                            const div = document.createElement('div');
+                            div.className = 'sugerencia-item';
+                            div.innerText = item.display_name.split(',').slice(0, 3).join(',');
+                            div.onclick = () => {
+                                input.value = div.innerText;
+                                contenedor.style.display = 'none';
+                                mapaObj.setView([parseFloat(item.lat), parseFloat(item.lon)], 15);
+                                marcadorObj.setLatLng([parseFloat(item.lat), parseFloat(item.lon)]);
+                            };
+                            contenedor.appendChild(div);
+                        });
+                        contenedor.style.display = 'block';
+                    } catch (e) { console.error(e); }
+                }, 300);
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            inicializarMapas();
+            configurarAutocompletado('lugar-input', 'sugerencias-crear', mapCrear, markerCrear);
+
+            // MONTAJE DEL COLLAGE LATERAL
+            const fotosElementos = document.querySelectorAll('.foto-recuerdo-item');
+            const colIzquierda = document.getElementById('collageIzquierdo');
+            const colDerecha = document.getElementById('collageDerecho');
+            const angulos = [-4, 3, -6, 5, -2, 4];
+            let indexCol = 0;
+
+            fotosElementos.forEach((imgElem, i) => {
+                const imgUrl = imgElem.src;
+                const titulo = imgElem.getAttribute('data-titulo') || 'Recuerdo';
+
+                if (imgUrl && imgUrl.trim() !== "") {
+                    const card = document.createElement('div');
+                    card.className = 'tarjeta-foto-collage';
+                    card.onclick = () => window.open('/linea-del-tiempo', '_blank');
+
+                    card.style.setProperty('--rotacion', `${angulos[i % angulos.length]}deg`);
+                    card.innerHTML = `<img src="${imgUrl}" alt="${titulo}"><p>${titulo}</p>`;
+
+                    if (indexCol % 2 === 0) colIzquierda.appendChild(card);
+                    else colDerecha.appendChild(card);
+                    indexCol++;
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>
