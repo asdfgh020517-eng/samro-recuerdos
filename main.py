@@ -32,8 +32,9 @@ oauth.register(
     client_kwargs={'scope': 'openid email profile https://www.googleapis.com/auth/drive.file'}
 )
 
-# ARCHIVOS JSON PARA CREDENCIALES LOCALES
+# ARCHIVOS JSON PARA CREDENCIALES Y RECUERDOS LOCALES
 ARCHIVAR_CRED = "credenciales.json"
+ARCHIVO_RECUERDOS_LOCAL = "recuerdos.json"
 
 def cargar_credenciales():
     if not os.path.exists(ARCHIVAR_CRED):
@@ -47,15 +48,8 @@ def guardar_credenciales(creds):
     with open(ARCHIVAR_CRED, "w", encoding="utf-8") as f:
         json.dump(creds, f, ensure_ascii=False, indent=4)
 
-# --- FUNCIONES DE GOOGLE DRIVE OPTIMIZADAS ---
-def obtener_token_acceso(request: Request):
-    token = request.session.get("token")
-    if token and "access_token" in token:
-        return token["access_token"]
-    return None
-
-def cargar_recuerdos_drive(request: Request):
-    access_token = obtener_token_acceso(request)
+# --- SISTEMA HÍBRIDO DE RECUERDOS (LOCAL + DRIVE) ---
+def cargar_recuerdos(request: Request):
     datos_iniciales = [
         {
             "id": 1,
@@ -69,42 +63,59 @@ def cargar_recuerdos_drive(request: Request):
         }
     ]
     
-    if not access_token:
-        return datos_iniciales
+    # 1. Intentar cargar desde el archivo local en Render
+    if os.path.exists(ARCHIVO_RECUERDOS_LOCAL):
+        try:
+            with open(ARCHIVO_RECUERDOS_LOCAL, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if isinstance(data, list) and len(data) > 0:
+                    return data
+        except Exception as e:
+            print("Error al leer recuerdos locales:", e)
 
-    headers = {"Authorization": f"Bearer {access_token}"}
-    query = f"'{GOOGLE_DRIVE_FOLDER_ID}' in parents and name = 'recuerdos.json' and trashed = false"
-    
-    try:
-        response = httpx.get("https://www.googleapis.com/drive/v3/files", headers=headers, params={"q": query}, timeout=10.0)
-        if response.status_code == 200:
-            files = response.json().get("files", [])
-            if files:
-                file_id = files[0]["id"]
-                content_res = httpx.get(f"https://www.googleapis.com/drive/v3/files/{file_id}?alt=media", headers=headers, timeout=10.0)
-                if content_res.status_code == 200:
-                    data = content_res.json()
-                    if isinstance(data, list) and len(data) > 0:
-                        return data
-    except Exception as e:
-        print("Error al cargar desde Drive:", e)
+    # 2. Si no hay local, intentar desde Google Drive
+    access_token = obtener_token_acceso(request)
+    if access_token:
+        headers = {"Authorization": f"Bearer {access_token}"}
+        query = "name = 'recuerdos.json' and trashed = false"
+        try:
+            response = httpx.get("https://www.googleapis.com/drive/v3/files", headers=headers, params={"q": query}, timeout=10.0)
+            if response.status_code == 200:
+                files = response.json().get("files", [])
+                if files:
+                    file_id = files[0]["id"]
+                    content_res = httpx.get(f"https://www.googleapis.com/drive/v3/files/{file_id}?alt=media", headers=headers, timeout=10.0)
+                    if content_res.status_code == 200:
+                        data = content_res.json()
+                        if isinstance(data, list) and len(data) > 0:
+                            guardar_recuerdos_local(data)
+                            return data
+        except Exception as e:
+            print("Error al cargar desde Drive:", e)
         
     return datos_iniciales
 
-def guardar_recuerdos_drive(request: Request, recuerdos):
+def guardar_recuerdos_local(recuerdos):
+    try:
+        with open(ARCHIVO_RECUERDOS_LOCAL, "w", encoding="utf-8") as f:
+            json.dump(recuerdos, f, ensure_ascii=False, indent=4)
+    except Exception as e:
+        print("Error al guardar recuerdos localmente:", e)
+
+def sincronizar_drive(request: Request, recuerdos):
+    # Guardar siempre localmente primero para garantizar disponibilidad inmediata
+    guardar_recuerdos_local(recuerdos)
+    
     access_token = obtener_token_acceso(request)
     if not access_token:
-        print("Error al guardar: No hay access_token en la sesión.")
         return
 
     headers = {"Authorization": f"Bearer {access_token}"}
-    query = f"'{GOOGLE_DRIVE_FOLDER_ID}' in parents and name = 'recuerdos.json' and trashed = false"
+    query = "name = 'recuerdos.json' and trashed = false"
     json_data = json.dumps(recuerdos, ensure_ascii=False, indent=4)
     
     try:
-        # Buscamos directamente dentro de la carpeta SamroRecuerdos
         response = httpx.get("https://www.googleapis.com/drive/v3/files", headers=headers, params={"q": query}, timeout=10.0)
-        
         file_id = None
         if response.status_code == 200:
             files = response.json().get("files", [])
@@ -112,20 +123,14 @@ def guardar_recuerdos_drive(request: Request, recuerdos):
                 file_id = files[0]["id"]
         
         if file_id:
-            # Si el archivo ya existe dentro de la carpeta, lo actualizamos
-            update_res = httpx.patch(
+            httpx.patch(
                 f"https://www.googleapis.com/upload/drive/v3/files/{file_id}?uploadType=media",
                 headers={**headers, "Content-Type": "application/json"},
                 content=json_data,
                 timeout=15.0
             )
-            print("Resultado actualización en Drive:", update_res.status_code)
         else:
-            # Si no existe, lo creamos asignando explícitamente la carpeta como padre
-            metadata = {
-                "name": "recuerdos.json",
-                "parents": [GOOGLE_DRIVE_FOLDER_ID]
-            }
+            metadata = {"name": "recuerdos.json"}
             create_res = httpx.post(
                 "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
                 headers=headers,
@@ -135,8 +140,6 @@ def guardar_recuerdos_drive(request: Request, recuerdos):
                 },
                 timeout=15.0
             )
-            print("Resultado creación en Drive:", create_res.status_code, create_res.text)
-            
             if create_res.status_code in [200, 201]:
                 new_file_id = create_res.json().get("id")
                 if new_file_id:
@@ -147,7 +150,13 @@ def guardar_recuerdos_drive(request: Request, recuerdos):
                         timeout=10.0
                     )
     except Exception as e:
-        print("Excepción al guardar en Drive:", e)
+        print("Excepción al sincronizar con Drive:", e)
+
+def obtener_token_acceso(request: Request):
+    token = request.session.get("token")
+    if token and "access_token" in token:
+        return token["access_token"]
+    return None
 
 def subir_archivo_drive(request: Request, archivo: UploadFile, extensiones_video):
     access_token = obtener_token_acceso(request)
@@ -285,7 +294,7 @@ def muro(request: Request):
     if not request.session.get("usuario"):
         return RedirectResponse(url="/login", status_code=303)
         
-    recuerdos = cargar_recuerdos_drive(request)
+    recuerdos = cargar_recuerdos(request)
     return templates.TemplateResponse(
         request=request, 
         name="muro.html", 
@@ -297,7 +306,7 @@ def linea_del_tiempo(request: Request):
     if not request.session.get("usuario"):
         return RedirectResponse(url="/login", status_code=303)
 
-    recuerdos = cargar_recuerdos_drive(request)
+    recuerdos = cargar_recuerdos(request)
     return templates.TemplateResponse(
         request=request, 
         name="linea.html", 
@@ -317,7 +326,7 @@ async def crear_recuerdo(
     if not request.session.get("usuario"):
         return RedirectResponse(url="/login", status_code=303)
 
-    recuerdos = cargar_recuerdos_drive(request)
+    recuerdos = cargar_recuerdos(request)
     nuevo_id = max([r["id"] for r in recuerdos], default=0) + 1
     
     rutas_imagenes = []
@@ -345,7 +354,7 @@ async def crear_recuerdo(
     }
     
     recuerdos.insert(0, nuevo_recuerdo)
-    guardar_recuerdos_drive(request, recuerdos)
+    sincronizar_drive(request, recuerdos)
     return RedirectResponse(url="/muro", status_code=303)
 
 @app.delete("/recuerdos/{recuerdo_id}")
@@ -353,9 +362,9 @@ async def eliminar_recuerdo(request: Request, recuerdo_id: int):
     if not request.session.get("usuario"):
         return {"status": "error", "message": "No autorizado"}
 
-    recuerdos = cargar_recuerdos_drive(request)
+    recuerdos = cargar_recuerdos(request)
     recuerdos = [r for r in recuerdos if r["id"] != recuerdo_id]
-    guardar_recuerdos_drive(request, recuerdos)
+    sincronizar_drive(request, recuerdos)
     return {"status": "success", "message": "Recuerdo eliminado"}
 
 @app.post("/recuerdos/{recuerdo_id}/editar")
@@ -372,7 +381,7 @@ async def editar_recuerdo(
     if not request.session.get("usuario"):
         return RedirectResponse(url="/login", status_code=303)
 
-    recuerdos = cargar_recuerdos_drive(request)
+    recuerdos = cargar_recuerdos(request)
     EXT_VIDEOS = ('.mp4', '.mov', '.avi', '.mkv', '.webm')
     
     for r in recuerdos:
@@ -400,5 +409,5 @@ async def editar_recuerdo(
                 r["videos"] = nuevos_vids
             break
             
-    guardar_recuerdos_drive(request, recuerdos)
+    sincronizar_drive(request, recuerdos)
     return RedirectResponse(url="/muro", status_code=303)
