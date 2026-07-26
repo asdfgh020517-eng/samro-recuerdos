@@ -95,7 +95,6 @@
             background-color: #c2185b;
         }
 
-        /* ESTILO PARA LOS BOTONES DE LA CABECERA */
         .acciones-header {
             display: flex;
             gap: 10px;
@@ -117,7 +116,6 @@
             background-color: #1565c0;
         }
 
-        /* ESTILO DEL BOTÓN MORADO */
         .contenedor-btn-ver-recuerdos {
             text-align: center;
             margin: 25px 0;
@@ -165,6 +163,19 @@
         .leaflet-control-gps { background: #ffffff; border: 2px solid rgba(0,0,0,0.2); border-radius: 4px; width: 34px; height: 34px; line-height: 30px; text-align: center; font-size: 18px; cursor: pointer; box-shadow: 0 1px 5px rgba(0,0,0,0.4); user-select: none; }
         .leaflet-control-gps:hover { background: #f4f4f4; }
 
+        /* ESTILOS PARA LA TARJETA DE RECUERDO PUBLICADO */
+        .tarjeta-recuerdo {
+            background: #ffffff;
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            border: 2px solid #ffccd5;
+        }
+        .tarjeta-recuerdo h3 { margin-top: 0; color: #d81b60; font-family: 'Dancing Script', cursive; font-size: 32px; }
+        .galeria-multimedia { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+        .galeria-multimedia img, .galeria-multimedia video { width: 100%; max-height: 300px; object-fit: cover; border-radius: 10px; }
+
         @media (max-width: 900px) {
             .layout-principal { grid-template-columns: 1fr; }
             .collage-lateral { flex-direction: row; flex-wrap: wrap; justify-content: center; }
@@ -174,7 +185,6 @@
 </head>
 <body>
 
-    <!-- ENCABEZADO CON NOMBRE Y ACCESOS DE CONFIGURACIÓN Y SALIDA -->
     <header class="encabezado-muro">
         <h1>
             ❤️ 
@@ -195,7 +205,7 @@
         <!-- COLLAGE IZQUIERDO -->
         <div class="collage-lateral" id="collageIzquierdo"></div>
 
-        <!-- CONTENEDOR CENTRAL (FORMULARIO) -->
+        <!-- CONTENEDOR CENTRAL (FORMULARIO Y LISTA) -->
         <div class="contenedor-muro">
             <section class="seccion-crear">
                 <h2>✨ Agregar Nuevo Recuerdo</h2>
@@ -220,16 +230,15 @@
 
                     <label style="font-size: 14px; color: #555; display: block; margin-bottom: 5px;">📸 🎥 🎙️ Fotos, Videos o Mensaje de Voz:</label>
                     
-                    <!-- BOTONES SEPARADOS DE CÁMARA Y GALERÍA -->
                     <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 8px;">
                         <input type="file" id="input-camara" name="archivos" accept="image/*" capture="environment" onchange="manejarArchivosSeleccionados(this)" style="display: none;">
                         <button type="button" onclick="document.getElementById('input-camara').click()" style="background: linear-gradient(135deg, #ff2a85 0%, #e91e63 100%); color: white; border: none; padding: 10px 14px; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 10px rgba(233, 30, 99, 0.3);">
                             <span>📷</span> <span>Tomar Foto</span>
                         </button>
 
-                        <input type="file" id="input-galeria" name="archivos" accept="image/*,video/*" multiple onchange="manejarArchivosSeleccionados(this)" style="display: none;">
+                        <input type="file" id="input-galeria" name="archivos" accept="image/*,video/*,audio/*" multiple onchange="manejarArchivosSeleccionados(this)" style="display: none;">
                         <button type="button" onclick="document.getElementById('input-galeria').click()" style="background: linear-gradient(135deg, #1e88e5 0%, #1565c0 100%); color: white; border: none; padding: 10px 14px; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 10px rgba(30, 136, 229, 0.3);">
-                            <span>🖼️</span> <span>Galería / Videos</span>
+                            <span>🖼️</span> <span>Galería / Audios</span>
                         </button>
                     </div>
 
@@ -253,11 +262,60 @@
                 </form>
             </section>
 
-            <!-- BOTÓN MORADO PARA VER RECUERDOS (MISMA PESTAÑA) -->
+            <!-- BOTÓN MORADO PARA VER LÍNEA DE TIEMPO -->
             <div class="contenedor-btn-ver-recuerdos">
                 <a href="/linea-del-tiempo" class="btn-ver-mis-recuerdos">
                     <span>🔮</span> <span>Ver mis recuerdos</span> <span>🚀</span>
                 </a>
+            </div>
+
+            <!-- SECCIÓN PARA VISUALIZAR LOS RECUERDOS RECIENTES EN EL MURO -->
+            <div class="lista-recuerdos-muro">
+                <h2 style="color: #d81b60; font-family: 'Dancing Script', cursive; font-size: 38px; text-align: center; margin-top: 30px;">✨ Tus Recuerdos Recientes ✨</h2>
+                
+                {% for recuerdo in recuerdos %}
+                <div class="tarjeta-recuerdo">
+                    <h3>{{ recuerdo.titulo }}</h3>
+                    <p style="color: #666; font-size: 13px; margin: 4px 0;">📅 {{ recuerdo.fecha }} {% if recuerdo.lugar %} | 📍 {{ recuerdo.lugar }}{% endif %}</p>
+                    <p style="color: #333; font-size: 15px; line-height: 1.5; white-space: pre-line;">{{ recuerdo.nota }}</p>
+                    
+                    {% if recuerdo.musica %}
+                    <p style="margin: 8px 0;">🎵 <a href="{{ recuerdo.musica }}" target="_blank" style="color: #1e88e5; text-decoration: underline;">Escuchar canción o enlace musical</a></p>
+                    {% endif %}
+
+                    <!-- VISUALIZACIÓN DE IMÁGENES Y AUDIOS/VIDEOS -->
+                    <div class="galeria-multimedia">
+                        {% if recuerdo.imagenes %}
+                            {% for img in recuerdo.imagenes %}
+                                {% if img.endswith('.webm') or 'audio' in img %}
+                                    <audio controls style="width: 100%; margin-top: 8px;">
+                                        <source src="{{ img }}" type="audio/webm">
+                                        Tu navegador no soporta elementos de audio.
+                                    </audio>
+                                {% else %}
+                                    <img src="{{ img }}" alt="Imagen de recuerdo">
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+
+                        {% if recuerdo.videos %}
+                            {% for vid in recuerdo.videos %}
+                                {% if vid.endswith('.webm') or 'audio' in vid %}
+                                    <audio controls style="width: 100%; margin-top: 8px;">
+                                        <source src="{{ vid }}" type="audio/webm">
+                                        Tu navegador no soporta elementos de audio.
+                                    </audio>
+                                {% else %}
+                                    <video controls>
+                                        <source src="{{ vid }}" type="video/mp4">
+                                        Tu navegador no soporta videos.
+                                    </video>
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
             </div>
         </div>
 
@@ -266,20 +324,19 @@
 
     </div>
 
-    <!-- ELEMENTOS OCULTOS PARA QUE EL JS MONTE EL COLLAGE LATERAL DE FOTOS -->
+    <!-- ELEMENTOS OCULTOS PARA EL COLLAGE LATERAL -->
     <div style="display:none;">
         {% for recuerdo in recuerdos %}
             {% if recuerdo.imagenes %}
                 {% for img in recuerdo.imagenes %}
-                    <img src="{{ img }}" class="foto-recuerdo-item" data-titulo="{{ recuerdo.titulo }}">
+                    {% if not img.endswith('.webm') %}
+                        <img src="{{ img }}" class="foto-recuerdo-item" data-titulo="{{ recuerdo.titulo }}">
+                    {% endif %}
                 {% endfor %}
-            {% elif recuerdo.imagen %}
-                <img src="{{ recuerdo.imagen }}" class="foto-recuerdo-item" data-titulo="{{ recuerdo.titulo }}">
             {% endif %}
         {% endfor %}
     </div>
 
-    <!-- LIBRERÍA DE MAPA INTERACTIVO -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
@@ -291,18 +348,13 @@
         function manejarArchivosSeleccionados(input) {
             const textoSpan = document.getElementById('texto-archivos');
             if (input.files.length > 5) {
-                alert("Solo puedes seleccionar un máximo de 5 fotos o videos por recuerdo.");
+                alert("Solo puedes seleccionar un máximo de 5 fotos o archivos por recuerdo.");
                 input.value = "";
                 textoSpan.innerText = "Ningún archivo seleccionado";
                 return;
             }
-
             if (input.files.length > 0) {
-                if (input.files.length === 1) {
-                    textoSpan.innerText = `Archivo: ${input.files[0].name}`;
-                } else {
-                    textoSpan.innerText = `${input.files.length} archivos seleccionados`;
-                }
+                textoSpan.innerText = input.files.length === 1 ? `Archivo: ${input.files[0].name}` : `${input.files.length} archivos seleccionados`;
             } else {
                 textoSpan.innerText = "Ningún archivo seleccionado";
             }
@@ -313,11 +365,7 @@
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 mediaRecorder = new MediaRecorder(stream);
-
-                mediaRecorder.ondataavailable = event => {
-                    audioChunks.push(event.data);
-                };
-
+                mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
                 mediaRecorder.onstop = () => {
                     audioBlobFinal = new Blob(audioChunks, { type: 'audio/webm' });
                     const audioUrl = URL.createObjectURL(audioBlobFinal);
@@ -326,7 +374,6 @@
                     audioElement.style.display = 'block';
                     document.getElementById('texto-archivos').innerText = "🎤 Audio grabado listo para enviar";
                 };
-
                 mediaRecorder.start();
                 document.getElementById('btn-grabar').disabled = true;
                 document.getElementById('btn-grabar').style.opacity = '0.6';
@@ -336,7 +383,6 @@
                 document.getElementById('estado-grabacion').innerText = "🔴 Grabando voz...";
             } catch (err) {
                 alert("No se pudo acceder al micrófono. Asegúrate de dar permisos.");
-                console.error(err);
             }
         }
 
@@ -357,13 +403,11 @@
                 const myFile = new File([audioBlobFinal], "mensaje_voz.webm", { type: 'audio/webm' });
                 const dataTransfer = new DataTransfer();
                 dataTransfer.items.add(myFile);
-                
                 const inputOcultoAudio = document.createElement('input');
                 inputOcultoAudio.type = 'file';
                 inputOcultoAudio.name = 'archivos';
                 inputOcultoAudio.style.display = 'none';
                 inputOcultoAudio.files = dataTransfer.files;
-                
                 this.appendChild(inputOcultoAudio);
             }
         });
@@ -472,7 +516,6 @@
             inicializarMapas();
             configurarAutocompletado('lugar-input', 'sugerencias-crear', mapCrear, markerCrear);
 
-            // MONTAJE DEL COLLAGE LATERAL
             const fotosElementos = document.querySelectorAll('.foto-recuerdo-item');
             const colIzquierda = document.getElementById('collageIzquierdo');
             const colDerecha = document.getElementById('collageDerecho');
@@ -483,10 +526,9 @@
                 const imgUrl = imgElem.src;
                 const titulo = imgElem.getAttribute('data-titulo') || 'Recuerdo';
 
-                if (imgUrl && imgUrl.trim() !== "") {
+                if (imgUrl && imgUrl.trim() !== "" && !imgUrl.includes('.webm')) {
                     const card = document.createElement('div');
                     card.className = 'tarjeta-foto-collage';
-                    // Se quita '_blank' para abrir en la misma pestaña
                     card.onclick = () => window.location.href = '/linea-del-tiempo';
 
                     card.style.setProperty('--rotacion', `${angulos[i % angulos.length]}deg`);
