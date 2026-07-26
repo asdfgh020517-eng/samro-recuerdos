@@ -48,7 +48,7 @@ def guardar_credenciales(creds):
     with open(ARCHIVAR_CRED, "w", encoding="utf-8") as f:
         json.dump(creds, f, ensure_ascii=False, indent=4)
 
-# --- SISTEMA HÍBRIDO DE RECUERDOS (LOCAL + DRIVE) ---
+# --- SISTEMA HÍBRIDO OPTIMIZADO (LOCAL + DRIVE) ---
 def cargar_recuerdos(request: Request):
     datos_iniciales = [
         {
@@ -63,7 +63,27 @@ def cargar_recuerdos(request: Request):
         }
     ]
     
-    # 1. Intentar cargar desde el archivo local en Render
+    # 1. Intentar cargar primero desde Google Drive si hay sesión activa
+    access_token = obtener_token_acceso(request)
+    if access_token:
+        headers = {"Authorization": f"Bearer {access_token}"}
+        query = "name = 'recuerdos.json' and trashed = false"
+        try:
+            response = httpx.get("https://www.googleapis.com/drive/v3/files", headers=headers, params={"q": query}, timeout=8.0)
+            if response.status_code == 200:
+                files = response.json().get("files", [])
+                if files:
+                    file_id = files[0]["id"]
+                    content_res = httpx.get(f"https://www.googleapis.com/drive/v3/files/{file_id}?alt=media", headers=headers, timeout=8.0)
+                    if content_res.status_code == 200:
+                        data = content_res.json()
+                        if isinstance(data, list) and len(data) > 0:
+                            guardar_recuerdos_local(data)
+                            return data
+        except Exception as e:
+            print("Aviso al cargar desde Drive, usando respaldo local:", e)
+
+    # 2. Respaldo local si Drive no responde o no hay sesión
     if os.path.exists(ARCHIVO_RECUERDOS_LOCAL):
         try:
             with open(ARCHIVO_RECUERDOS_LOCAL, "r", encoding="utf-8") as f:
@@ -72,26 +92,6 @@ def cargar_recuerdos(request: Request):
                     return data
         except Exception as e:
             print("Error al leer recuerdos locales:", e)
-
-    # 2. Si no hay local, intentar desde Google Drive
-    access_token = obtener_token_acceso(request)
-    if access_token:
-        headers = {"Authorization": f"Bearer {access_token}"}
-        query = "name = 'recuerdos.json' and trashed = false"
-        try:
-            response = httpx.get("https://www.googleapis.com/drive/v3/files", headers=headers, params={"q": query}, timeout=10.0)
-            if response.status_code == 200:
-                files = response.json().get("files", [])
-                if files:
-                    file_id = files[0]["id"]
-                    content_res = httpx.get(f"https://www.googleapis.com/drive/v3/files/{file_id}?alt=media", headers=headers, timeout=10.0)
-                    if content_res.status_code == 200:
-                        data = content_res.json()
-                        if isinstance(data, list) and len(data) > 0:
-                            guardar_recuerdos_local(data)
-                            return data
-        except Exception as e:
-            print("Error al cargar desde Drive:", e)
         
     return datos_iniciales
 
@@ -103,7 +103,6 @@ def guardar_recuerdos_local(recuerdos):
         print("Error al guardar recuerdos localmente:", e)
 
 def sincronizar_drive(request: Request, recuerdos):
-    # Guardar siempre localmente primero para garantizar disponibilidad inmediata
     guardar_recuerdos_local(recuerdos)
     
     access_token = obtener_token_acceso(request)
@@ -192,7 +191,6 @@ def subir_archivo_drive(request: Request, archivo: UploadFile, extensiones_video
                 timeout=10.0
             )
             
-            # URL optimizada para renderizado directo de imágenes
             file_url = f"https://lh3.googleusercontent.com/d/{file_id}"
             es_video = (archivo.content_type and archivo.content_type.startswith("video")) or \
                        archivo.filename.lower().endswith(extensiones_video)
@@ -356,7 +354,7 @@ async def crear_recuerdo(
     
     recuerdos.insert(0, nuevo_recuerdo)
     sincronizar_drive(request, recuerdos)
-    return RedirectResponse(url="/muro", status_code=303)
+    return RedirectResponse(url="/linea-del-tiempo", status_code=303)
 
 @app.delete("/recuerdos/{recuerdo_id}")
 async def eliminar_recuerdo(request: Request, recuerdo_id: int):
@@ -411,4 +409,4 @@ async def editar_recuerdo(
             break
             
     sincronizar_drive(request, recuerdos)
-    return RedirectResponse(url="/muro", status_code=303)
+    return RedirectResponse(url="/linea-del-tiempo", status_code=303)
