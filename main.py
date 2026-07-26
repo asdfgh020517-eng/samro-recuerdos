@@ -103,35 +103,46 @@ def guardar_recuerdos_drive(request: Request, recuerdos):
     
     try:
         response = httpx.get("https://www.googleapis.com/drive/v3/files", headers=headers, params={"q": query}, timeout=10.0)
+        
+        file_id = None
         if response.status_code == 200:
             files = response.json().get("files", [])
-            
             if files:
                 file_id = files[0]["id"]
-                update_res = httpx.patch(
-                    f"https://www.googleapis.com/upload/drive/v3/files/{file_id}?uploadType=media",
-                    headers={**headers, "Content-Type": "application/json"},
-                    content=json_data,
-                    timeout=15.0
-                )
-                print("Resultado actualización en Drive:", update_res.status_code)
-            else:
-                metadata = {
-                    "name": "recuerdos.json",
-                    "parents": [GOOGLE_DRIVE_FOLDER_ID]
-                }
-                create_res = httpx.post(
-                    "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
-                    headers=headers,
-                    files={
-                        "data": ("metadata", json.dumps(metadata), "application/json"),
-                        "file": ("recuerdos.json", json_data, "application/json")
-                    },
-                    timeout=15.0
-                )
-                print("Resultado creación en Drive:", create_res.status_code, create_res.text)
+        
+        if file_id:
+            update_res = httpx.patch(
+                f"https://www.googleapis.com/upload/drive/v3/files/{file_id}?uploadType=media",
+                headers={**headers, "Content-Type": "application/json"},
+                content=json_data,
+                timeout=15.0
+            )
+            print("Resultado actualización en Drive:", update_res.status_code)
         else:
-            print("Error al consultar Drive para guardar:", response.status_code, response.text)
+            metadata = {
+                "name": "recuerdos.json",
+                "parents": [GOOGLE_DRIVE_FOLDER_ID]
+            }
+            create_res = httpx.post(
+                "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
+                headers=headers,
+                files={
+                    "data": ("metadata", json.dumps(metadata), "application/json"),
+                    "file": ("recuerdos.json", json_data, "application/json")
+                },
+                timeout=15.0
+            )
+            print("Resultado creación en Drive:", create_res.status_code, create_res.text)
+            
+            if create_res.status_code in [200, 201]:
+                new_file_id = create_res.json().get("id")
+                if new_file_id:
+                    httpx.post(
+                        f"https://www.googleapis.com/drive/v3/files/{new_file_id}/permissions",
+                        headers=headers,
+                        json={"role": "reader", "type": "anyone"},
+                        timeout=10.0
+                    )
     except Exception as e:
         print("Excepción al guardar en Drive:", e)
 
