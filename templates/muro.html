@@ -2,35 +2,52 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SamRO Recuerdos ❤️</title>
     <link rel="stylesheet" href="/static/styles.css">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#d81b60">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
     <style>
+        html, body {
+            overflow-x: hidden;
+            width: 100%;
+            max-width: 100vw;
+            box-sizing: border-box;
+        }
+
+        *, *:before, *:after {
+            box-sizing: inherit;
+        }
+
         body {
             background-color: #ffe6ed;
             margin: 0;
-            padding: 20px;
+            padding: 10px;
             font-family: Arial, sans-serif;
-            overflow-x: hidden;
         }
+
         .layout-principal {
             display: grid;
-            grid-template-columns: 1fr minmax(320px, 550px) 1fr;
+            grid-template-columns: 1fr minmax(300px, 550px) 1fr;
             gap: 20px;
             align-items: start;
             max-width: 1400px;
             margin: 0 auto;
+            width: 100%;
         }
+
         .collage-lateral {
             display: flex;
             flex-direction: column;
             gap: 15px;
         }
+
         .tarjeta-foto-collage {
             background: #fff;
             padding: 8px;
@@ -40,16 +57,19 @@
             transition: transform 0.3s ease;
             cursor: pointer;
         }
+
         .tarjeta-foto-collage:hover {
             transform: scale(1.05) rotate(0deg);
             z-index: 5;
         }
+
         .tarjeta-foto-collage img {
             width: 100%;
             height: 180px;
             object-fit: cover;
             border-radius: 8px;
         }
+
         .tarjeta-foto-collage p {
             margin: 5px 0 0 0;
             font-size: 12px;
@@ -57,30 +77,104 @@
             color: #d81b60;
             text-align: center;
         }
-        .grupo-fecha { display: flex; gap: 8px; align-items: center; }
+
+        .encabezado-muro {
+            width: 100%;
+            padding: 15px 10px;
+            background-color: #ffffff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .encabezado-muro h1 {
+            font-size: 20px;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .grupo-fecha { display: flex; gap: 8px; align-items: center; width: 100%; }
         .grupo-fecha input[type="date"] { flex: 1; }
+
         .btn-hoy {
             background-color: #e91e63; color: white; border: none;
             padding: 10px 14px; border-radius: 8px; font-size: 13px;
             font-weight: bold; cursor: pointer; white-space: nowrap;
         }
         .btn-hoy:hover { background-color: #c2185b; }
-        .acciones-header { display: flex; gap: 10px; align-items: center; }
-        .btn-config {
-            background-color: #1e88e5; color: white; padding: 8px 14px;
+
+        .acciones-header { display: flex; gap: 8px; align-items: center; }
+        
+        .btn-config, .btn-salir {
+            background-color: #1e88e5; color: white; padding: 8px 12px;
             border-radius: 8px; text-decoration: none; font-size: 13px; font-weight: bold;
         }
+        .btn-salir { background-color: #d81b60; }
         .btn-config:hover { background-color: #1565c0; }
-        .contenedor-btn-ver-recuerdos { text-align: center; margin: 25px 0; }
+        .btn-salir:hover { background-color: #ad1457; }
+
+        .contenedor-muro {
+            width: 100%;
+            max-width: 580px;
+            margin: 0 auto;
+        }
+
+        .seccion-crear {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            width: 100%;
+        }
+
+        .seccion-crear h2 {
+            font-size: 20px;
+            color: #d81b60;
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+
+        .form-recuerdo {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .form-recuerdo input, .form-recuerdo textarea {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px; /* Evita zoom en celulares */
+            border: 1.5px solid #f48fb1;
+            border-radius: 8px;
+            outline: none;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+
+        .form-recuerdo input:focus, .form-recuerdo textarea:focus {
+            border-color: #d81b60;
+        }
+
+        .contenedor-btn-ver-recuerdos { text-align: center; margin: 20px 0; width: 100%; }
+        
         .btn-ver-mis-recuerdos {
             background: linear-gradient(135deg, #6a1b9a 0%, #8e24aa 100%);
-            color: #ffffff; border: none; padding: 16px 28px; font-size: 24px;
+            color: #ffffff; border: none; padding: 14px 20px; font-size: 20px;
             font-family: 'Dancing Script', cursive; font-weight: bold;
             border-radius: 30px; cursor: pointer; box-shadow: 0 4px 15px rgba(106, 27, 154, 0.4);
             width: 100%; display: flex; align-items: center; justify-content: center;
             gap: 10px; text-decoration: none; box-sizing: border-box;
         }
         .btn-ver-mis-recuerdos:hover { color: #ffffff; transform: translateY(-2px); }
+
         .contenedor-autocomplete { position: relative; width: 100%; }
         .sugerencias-lista {
             position: absolute; top: 100%; left: 0; right: 0; background: #fff;
@@ -89,12 +183,13 @@
         }
         .sugerencia-item { padding: 10px 12px; font-size: 13px; cursor: pointer; border-bottom: 1px solid #f0f0f0; color: #333; }
         .sugerencia-item:hover { background-color: #ffe6ed; color: #d81b60; }
-        .mapa-visor { height: 220px; width: 100%; border-radius: 10px; margin-top: 10px; margin-bottom: 15px; border: 2px solid #ffccd5; z-index: 1; }
+        
+        .mapa-visor { height: 200px; width: 100%; border-radius: 10px; margin-top: 5px; margin-bottom: 10px; border: 2px solid #ffccd5; z-index: 1; }
         .leaflet-control-gps { background: #ffffff; border: 2px solid rgba(0,0,0,0.2); border-radius: 4px; width: 34px; height: 34px; line-height: 30px; text-align: center; font-size: 18px; cursor: pointer; }
+
         @media (max-width: 900px) {
             .layout-principal { grid-template-columns: 1fr; }
-            .collage-lateral { flex-direction: row; flex-wrap: wrap; justify-content: center; }
-            .tarjeta-foto-collage { width: 45%; }
+            .collage-lateral { display: none; } /* Oculta los collages laterales en móvil para ganar espacio puro y vertical */
         }
     </style>
 </head>
@@ -103,15 +198,15 @@
     <header class="encabezado-muro">
         <h1>
             ❤️ 
-            <span style="font-family: 'Dancing Script', cursive; font-size: 48px; letter-spacing: 1px;">
+            <span style="font-family: 'Dancing Script', cursive; font-size: 36px; letter-spacing: 1px;">
                 <span style="color: #ff2a85;">Sam</span><span style="color: #1e88e5;">RO</span>
             </span>
-            <span style="color: #d81b60; font-family: 'Dancing Script', cursive; font-size: 44px; margin-left: 8px;">Recuerdos</span> 
+            <span style="color: #d81b60; font-family: 'Dancing Script', cursive; font-size: 32px; margin-left: 5px;">Recuerdos</span> 
             ❤️
         </h1>
         <div class="acciones-header">
             <a href="/configuracion" class="btn-config">⚙️ Ajustes</a>
-            <a href="/logout" class="btn-salir">Cerrar Sesión</a>
+            <a href="/logout" class="btn-salir">Salir</a>
         </div>
     </header>
 
@@ -136,36 +231,36 @@
                     
                     <div id="mapa-crear" class="mapa-visor"></div>
 
-                    <textarea name="nota" placeholder="📝 Escribe la historia..." rows="4" required></textarea>
+                    <textarea name="nota" placeholder="📝 Escribe la historia..." rows="3" required></textarea>
                     
                     <input type="url" name="musica" placeholder="🎵 Link de canción (Opcional)">
 
-                    <label style="font-size: 14px; color: #555; display: block; margin-bottom: 5px;">📸 🎥 🎙️ Fotos, Videos o Mensaje de Voz:</label>
+                    <label style="font-size: 13px; color: #555; display: block; margin-bottom: 2px;">📸 🎥 🎙️ Fotos, Videos o Mensaje de Voz:</label>
                     
-                    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 8px;">
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 5px;">
                         <input type="file" id="input-camara" name="archivos" accept="image/*" capture="environment" onchange="manejarArchivosSeleccionados(this)" style="display: none;">
-                        <button type="button" onclick="document.getElementById('input-camara').click()" style="background: linear-gradient(135deg, #ff2a85 0%, #e91e63 100%); color: white; border: none; padding: 10px 14px; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer;">
+                        <button type="button" onclick="document.getElementById('input-camara').click()" style="background: linear-gradient(135deg, #ff2a85 0%, #e91e63 100%); color: white; border: none; padding: 10px 12px; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; flex: 1;">
                             <span>📷</span> <span>Tomar Foto</span>
                         </button>
 
                         <input type="file" id="input-galeria" name="archivos" accept="image/*,video/*,audio/*" multiple onchange="manejarArchivosSeleccionados(this)" style="display: none;">
-                        <button type="button" onclick="document.getElementById('input-galeria').click()" style="background: linear-gradient(135deg, #1e88e5 0%, #1565c0 100%); color: white; border: none; padding: 10px 14px; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer;">
+                        <button type="button" onclick="document.getElementById('input-galeria').click()" style="background: linear-gradient(135deg, #1e88e5 0%, #1565c0 100%); color: white; border: none; padding: 10px 12px; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; flex: 1;">
                             <span>🖼️</span> <span>Galería / Audios</span>
                         </button>
                     </div>
 
-                    <div style="background: #fdf2f4; border: 1px dashed #e91e63; padding: 10px; border-radius: 8px; margin-bottom: 10px;">
-                        <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 5px;">
-                            <button type="button" id="btn-grabar" onclick="iniciarGrabacion()" style="background-color: #2e7d32; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer;">🎙️ Grabar Audio</button>
-                            <button type="button" id="btn-detener" onclick="detenerGrabacion()" disabled style="background-color: #c62828; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; opacity: 0.6;">⏹️ Detener</button>
-                            <span id="estado-grabacion" style="font-size: 12px; color: #666;">Micrófono listo</span>
+                    <div style="background: #fdf2f4; border: 1px dashed #e91e63; padding: 8px; border-radius: 8px; margin-bottom: 5px;">
+                        <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 5px; flex-wrap: wrap;">
+                            <button type="button" id="btn-grabar" onclick="iniciarGrabacion()" style="background-color: #2e7d32; color: white; border: none; padding: 8px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer;">🎙️ Grabar Audio</button>
+                            <button type="button" id="btn-detener" onclick="detenerGrabacion()" disabled style="background-color: #c62828; color: white; border: none; padding: 8px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; opacity: 0.6;">⏹️ Detener</button>
+                            <span id="estado-grabacion" style="font-size: 11px; color: #666;">Micrófono listo</span>
                         </div>
-                        <audio id="audio-preview" controls style="width: 100%; display: none; margin-top: 5px; height: 35px;"></audio>
+                        <audio id="audio-preview" controls style="width: 100%; display: none; margin-top: 5px; height: 32px;"></audio>
                     </div>
 
-                    <span id="texto-archivos" style="font-size: 13px; color: #666; display: block; margin-bottom: 5px;">Ningún archivo seleccionado</span>
+                    <span id="texto-archivos" style="font-size: 12px; color: #666; display: block; margin-bottom: 5px;">Ningún archivo seleccionado</span>
 
-                    <button type="submit">Publicar Recuerdo 💖</button>
+                    <button type="submit" style="background: #e91e63; color: white; border: none; padding: 14px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; width: 100%;">Publicar Recuerdo 💖</button>
                 </form>
             </section>
 
@@ -387,8 +482,8 @@
                     card.style.setProperty('--rotacion', `${angulos[i % angulos.length]}deg`);
                     card.innerHTML = `<img src="${imgUrl}" alt="${titulo}"><p>${titulo}</p>`;
 
-                    if (indexCol % 2 === 0) colIzquierda.appendChild(card);
-                    else colDerecha.appendChild(card);
+                    if (indexCol % 2 === 0 && colIzquierda) colIzquierda.appendChild(card);
+                    else if (colDerecha) colDerecha.appendChild(card);
                     indexCol++;
                 }
             });

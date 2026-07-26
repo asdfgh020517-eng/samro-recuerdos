@@ -2,12 +2,15 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Configuración de Cuenta - SamRO ❤️</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#d81b60">
 
     <style>
         body {
@@ -16,16 +19,22 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
+            overflow-x: hidden;
+            box-sizing: border-box;
+        }
+
+        *, *:before, *:after {
+            box-sizing: inherit;
         }
 
         .card-config {
             background: #ffffff;
-            padding: 30px;
+            padding: 25px 20px;
             border-radius: 18px;
             box-shadow: 0 10px 25px rgba(216, 27, 96, 0.15);
-            width: 90%;
+            width: 92%;
             max-width: 400px;
             text-align: center;
             border: 1px solid #ffccd5;
@@ -77,11 +86,16 @@
 
         .form-group input {
             width: 100%;
-            padding: 11px;
+            padding: 12px;
             border: 1px solid #ddd;
             border-radius: 8px;
             box-sizing: border-box;
-            font-size: 14px;
+            font-size: 16px; /* Evita zoom automático en celulares */
+            outline: none;
+        }
+
+        .form-group input:focus {
+            border-color: #d81b60;
         }
 
         .btn-guardar {
@@ -89,9 +103,9 @@
             background-color: #e91e63;
             color: white;
             border: none;
-            padding: 12px;
+            padding: 14px;
             border-radius: 8px;
-            font-size: 15px;
+            font-size: 16px;
             font-weight: bold;
             cursor: pointer;
             margin-top: 5px;
@@ -129,7 +143,7 @@
     <div class="card-config">
         <div class="titulo-config">
             <span style="font-size: 24px;">❤️</span>
-            <h1 style="font-family: 'Dancing Script', cursive; font-size: 32px; margin: 0; color: #ff2a85;">
+            <h1 style="font-family: 'Dancing Script', cursive; font-size: 30px; margin: 0; color: #ff2a85;">
                 Credenciales Locales
             </h1>
             <span style="font-size: 24px;">❤️</span>
