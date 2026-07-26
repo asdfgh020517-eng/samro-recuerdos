@@ -192,7 +192,8 @@ def subir_archivo_drive(request: Request, archivo: UploadFile, extensiones_video
                 timeout=10.0
             )
             
-            file_url = f"https://drive.google.com/uc?export=view&id={file_id}"
+            # URL optimizada para renderizado directo de imágenes
+            file_url = f"https://lh3.googleusercontent.com/d/{file_id}"
             es_video = (archivo.content_type and archivo.content_type.startswith("video")) or \
                        archivo.filename.lower().endswith(extensiones_video)
             return file_url, es_video
