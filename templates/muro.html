@@ -5,13 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SamRO Recuerdos ❤️</title>
     <link rel="stylesheet" href="/static/styles.css">
-    
-    <!-- FUENTE CURSIVA ELEGANTE (DANCING SCRIPT) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
-
-    <!-- LIBRERÍA DE MAPA (Leaflet CSS) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
     <style>
@@ -22,7 +18,6 @@
             font-family: Arial, sans-serif;
             overflow-x: hidden;
         }
-
         .layout-principal {
             display: grid;
             grid-template-columns: 1fr minmax(320px, 550px) 1fr;
@@ -31,13 +26,11 @@
             max-width: 1400px;
             margin: 0 auto;
         }
-
         .collage-lateral {
             display: flex;
             flex-direction: column;
             gap: 15px;
         }
-
         .tarjeta-foto-collage {
             background: #fff;
             padding: 8px;
@@ -47,19 +40,16 @@
             transition: transform 0.3s ease;
             cursor: pointer;
         }
-
         .tarjeta-foto-collage:hover {
             transform: scale(1.05) rotate(0deg);
             z-index: 5;
         }
-
         .tarjeta-foto-collage img {
             width: 100%;
             height: 180px;
             object-fit: cover;
             border-radius: 8px;
         }
-
         .tarjeta-foto-collage p {
             margin: 5px 0 0 0;
             font-size: 12px;
@@ -67,115 +57,40 @@
             color: #d81b60;
             text-align: center;
         }
-
-        .grupo-fecha {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-
-        .grupo-fecha input[type="date"] {
-            flex: 1;
-        }
-
+        .grupo-fecha { display: flex; gap: 8px; align-items: center; }
+        .grupo-fecha input[type="date"] { flex: 1; }
         .btn-hoy {
-            background-color: #e91e63;
-            color: white;
-            border: none;
-            padding: 10px 14px;
-            border-radius: 8px;
-            font-size: 13px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background-color 0.2s ease;
-            white-space: nowrap;
+            background-color: #e91e63; color: white; border: none;
+            padding: 10px 14px; border-radius: 8px; font-size: 13px;
+            font-weight: bold; cursor: pointer; white-space: nowrap;
         }
-
-        .btn-hoy:hover {
-            background-color: #c2185b;
-        }
-
-        .acciones-header {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
+        .btn-hoy:hover { background-color: #c2185b; }
+        .acciones-header { display: flex; gap: 10px; align-items: center; }
         .btn-config {
-            background-color: #1e88e5;
-            color: white;
-            padding: 8px 14px;
-            border-radius: 8px;
-            text-decoration: none;
-            font-size: 13px;
-            font-weight: bold;
-            transition: background-color 0.2s;
+            background-color: #1e88e5; color: white; padding: 8px 14px;
+            border-radius: 8px; text-decoration: none; font-size: 13px; font-weight: bold;
         }
-
-        .btn-config:hover {
-            background-color: #1565c0;
-        }
-
-        .contenedor-btn-ver-recuerdos {
-            text-align: center;
-            margin: 25px 0;
-        }
-
+        .btn-config:hover { background-color: #1565c0; }
+        .contenedor-btn-ver-recuerdos { text-align: center; margin: 25px 0; }
         .btn-ver-mis-recuerdos {
             background: linear-gradient(135deg, #6a1b9a 0%, #8e24aa 100%);
-            color: #ffffff;
-            border: none;
-            padding: 16px 28px;
-            font-size: 24px;
-            font-family: 'Dancing Script', cursive;
-            letter-spacing: 0.5px;
-            font-weight: bold;
-            border-radius: 30px;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(106, 27, 154, 0.4);
-            transition: all 0.3s ease;
-            width: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            text-decoration: none;
-            box-sizing: border-box;
+            color: #ffffff; border: none; padding: 16px 28px; font-size: 24px;
+            font-family: 'Dancing Script', cursive; font-weight: bold;
+            border-radius: 30px; cursor: pointer; box-shadow: 0 4px 15px rgba(106, 27, 154, 0.4);
+            width: 100%; display: flex; align-items: center; justify-content: center;
+            gap: 10px; text-decoration: none; box-sizing: border-box;
         }
-
-        .btn-ver-mis-recuerdos:hover {
-            background: linear-gradient(135deg, #4a148c 0%, #7b1fa2 100%);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(106, 27, 154, 0.5);
-            color: #ffffff;
-        }
-
+        .btn-ver-mis-recuerdos:hover { color: #ffffff; transform: translateY(-2px); }
         .contenedor-autocomplete { position: relative; width: 100%; }
         .sugerencias-lista {
             position: absolute; top: 100%; left: 0; right: 0; background: #fff;
             border: 1px solid #ddd; border-radius: 8px; max-height: 180px;
-            overflow-y: auto; z-index: 9999; box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-            margin-top: -8px; display: none;
+            overflow-y: auto; z-index: 9999; display: none;
         }
         .sugerencia-item { padding: 10px 12px; font-size: 13px; cursor: pointer; border-bottom: 1px solid #f0f0f0; color: #333; }
         .sugerencia-item:hover { background-color: #ffe6ed; color: #d81b60; }
         .mapa-visor { height: 220px; width: 100%; border-radius: 10px; margin-top: 10px; margin-bottom: 15px; border: 2px solid #ffccd5; z-index: 1; }
-        .leaflet-control-gps { background: #ffffff; border: 2px solid rgba(0,0,0,0.2); border-radius: 4px; width: 34px; height: 34px; line-height: 30px; text-align: center; font-size: 18px; cursor: pointer; box-shadow: 0 1px 5px rgba(0,0,0,0.4); user-select: none; }
-        .leaflet-control-gps:hover { background: #f4f4f4; }
-
-        /* ESTILOS PARA LA TARJETA DE RECUERDO PUBLICADO */
-        .tarjeta-recuerdo {
-            background: #ffffff;
-            border-radius: 15px;
-            padding: 20px;
-            margin-top: 25px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-            border: 2px solid #ffccd5;
-        }
-        .tarjeta-recuerdo h3 { margin-top: 0; color: #d81b60; font-family: 'Dancing Script', cursive; font-size: 32px; }
-        .galeria-multimedia { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
-        .galeria-multimedia img, .galeria-multimedia video { width: 100%; max-height: 300px; object-fit: cover; border-radius: 10px; }
-
+        .leaflet-control-gps { background: #ffffff; border: 2px solid rgba(0,0,0,0.2); border-radius: 4px; width: 34px; height: 34px; line-height: 30px; text-align: center; font-size: 18px; cursor: pointer; }
         @media (max-width: 900px) {
             .layout-principal { grid-template-columns: 1fr; }
             .collage-lateral { flex-direction: row; flex-wrap: wrap; justify-content: center; }
@@ -201,11 +116,8 @@
     </header>
 
     <div class="layout-principal">
-
-        <!-- COLLAGE IZQUIERDO -->
         <div class="collage-lateral" id="collageIzquierdo"></div>
 
-        <!-- CONTENEDOR CENTRAL (FORMULARIO Y LISTA) -->
         <div class="contenedor-muro">
             <section class="seccion-crear">
                 <h2>✨ Agregar Nuevo Recuerdo</h2>
@@ -218,7 +130,7 @@
                     </div>
                     
                     <div class="contenedor-autocomplete">
-                        <input type="text" id="lugar-input" name="lugar" placeholder="📍 Buscar lugar o usar el botón GPS en el mapa..." autocomplete="off">
+                        <input type="text" id="lugar-input" name="lugar" placeholder="📍 Buscar lugar o usar el botón GPS..." autocomplete="off">
                         <div id="sugerencias-crear" class="sugerencias-lista"></div>
                     </div>
                     
@@ -226,110 +138,52 @@
 
                     <textarea name="nota" placeholder="📝 Escribe la historia..." rows="4" required></textarea>
                     
-                    <input type="url" name="musica" placeholder="🎵 Link de canción (YouTube, Spotify, etc. - Opcional)">
+                    <input type="url" name="musica" placeholder="🎵 Link de canción (Opcional)">
 
                     <label style="font-size: 14px; color: #555; display: block; margin-bottom: 5px;">📸 🎥 🎙️ Fotos, Videos o Mensaje de Voz:</label>
                     
                     <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 8px;">
                         <input type="file" id="input-camara" name="archivos" accept="image/*" capture="environment" onchange="manejarArchivosSeleccionados(this)" style="display: none;">
-                        <button type="button" onclick="document.getElementById('input-camara').click()" style="background: linear-gradient(135deg, #ff2a85 0%, #e91e63 100%); color: white; border: none; padding: 10px 14px; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 10px rgba(233, 30, 99, 0.3);">
+                        <button type="button" onclick="document.getElementById('input-camara').click()" style="background: linear-gradient(135deg, #ff2a85 0%, #e91e63 100%); color: white; border: none; padding: 10px 14px; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer;">
                             <span>📷</span> <span>Tomar Foto</span>
                         </button>
 
                         <input type="file" id="input-galeria" name="archivos" accept="image/*,video/*,audio/*" multiple onchange="manejarArchivosSeleccionados(this)" style="display: none;">
-                        <button type="button" onclick="document.getElementById('input-galeria').click()" style="background: linear-gradient(135deg, #1e88e5 0%, #1565c0 100%); color: white; border: none; padding: 10px 14px; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 10px rgba(30, 136, 229, 0.3);">
+                        <button type="button" onclick="document.getElementById('input-galeria').click()" style="background: linear-gradient(135deg, #1e88e5 0%, #1565c0 100%); color: white; border: none; padding: 10px 14px; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer;">
                             <span>🖼️</span> <span>Galería / Audios</span>
                         </button>
                     </div>
 
-                    <!-- GRABACIÓN DE AUDIO -->
                     <div style="background: #fdf2f4; border: 1px dashed #e91e63; padding: 10px; border-radius: 8px; margin-bottom: 10px;">
                         <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 5px;">
-                            <button type="button" id="btn-grabar" onclick="iniciarGrabacion()" style="background-color: #2e7d32; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer;">
-                                🎙️ Grabar Audio
-                            </button>
-                            <button type="button" id="btn-detener" onclick="detenerGrabacion()" disabled style="background-color: #c62828; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: not-allowed; opacity: 0.6;">
-                                ⏹️ Detener
-                            </button>
+                            <button type="button" id="btn-grabar" onclick="iniciarGrabacion()" style="background-color: #2e7d32; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer;">🎙️ Grabar Audio</button>
+                            <button type="button" id="btn-detener" onclick="detenerGrabacion()" disabled style="background-color: #c62828; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; opacity: 0.6;">⏹️ Detener</button>
                             <span id="estado-grabacion" style="font-size: 12px; color: #666;">Micrófono listo</span>
                         </div>
                         <audio id="audio-preview" controls style="width: 100%; display: none; margin-top: 5px; height: 35px;"></audio>
                     </div>
 
-                    <span id="texto-archivos" style="font-size: 13px; color: #666; display: block; margin-bottom: 5px;">Ningún archivo o audio seleccionado</span>
+                    <span id="texto-archivos" style="font-size: 13px; color: #666; display: block; margin-bottom: 5px;">Ningún archivo seleccionado</span>
 
                     <button type="submit">Publicar Recuerdo 💖</button>
                 </form>
             </section>
 
-            <!-- BOTÓN MORADO PARA VER LÍNEA DE TIEMPO -->
             <div class="contenedor-btn-ver-recuerdos">
                 <a href="/linea-del-tiempo" class="btn-ver-mis-recuerdos">
                     <span>🔮</span> <span>Ver mis recuerdos</span> <span>🚀</span>
                 </a>
             </div>
-
-            <!-- SECCIÓN PARA VISUALIZAR LOS RECUERDOS RECIENTES EN EL MURO -->
-            <div class="lista-recuerdos-muro">
-                <h2 style="color: #d81b60; font-family: 'Dancing Script', cursive; font-size: 38px; text-align: center; margin-top: 30px;">✨ Tus Recuerdos Recientes ✨</h2>
-                
-                {% for recuerdo in recuerdos %}
-                <div class="tarjeta-recuerdo">
-                    <h3>{{ recuerdo.titulo }}</h3>
-                    <p style="color: #666; font-size: 13px; margin: 4px 0;">📅 {{ recuerdo.fecha }} {% if recuerdo.lugar %} | 📍 {{ recuerdo.lugar }}{% endif %}</p>
-                    <p style="color: #333; font-size: 15px; line-height: 1.5; white-space: pre-line;">{{ recuerdo.nota }}</p>
-                    
-                    {% if recuerdo.musica %}
-                    <p style="margin: 8px 0;">🎵 <a href="{{ recuerdo.musica }}" target="_blank" style="color: #1e88e5; text-decoration: underline;">Escuchar canción o enlace musical</a></p>
-                    {% endif %}
-
-                    <!-- VISUALIZACIÓN DE IMÁGENES Y AUDIOS/VIDEOS -->
-                    <div class="galeria-multimedia">
-                        {% if recuerdo.imagenes %}
-                            {% for img in recuerdo.imagenes %}
-                                {% if img.endswith('.webm') or 'audio' in img %}
-                                    <audio controls style="width: 100%; margin-top: 8px;">
-                                        <source src="{{ img }}" type="audio/webm">
-                                        Tu navegador no soporta elementos de audio.
-                                    </audio>
-                                {% else %}
-                                    <img src="{{ img }}" alt="Imagen de recuerdo">
-                                {% endif %}
-                            {% endfor %}
-                        {% endif %}
-
-                        {% if recuerdo.videos %}
-                            {% for vid in recuerdo.videos %}
-                                {% if vid.endswith('.webm') or 'audio' in vid %}
-                                    <audio controls style="width: 100%; margin-top: 8px;">
-                                        <source src="{{ vid }}" type="audio/webm">
-                                        Tu navegador no soporta elementos de audio.
-                                    </audio>
-                                {% else %}
-                                    <video controls>
-                                        <source src="{{ vid }}" type="video/mp4">
-                                        Tu navegador no soporta videos.
-                                    </video>
-                                {% endif %}
-                            {% endfor %}
-                        {% endif %}
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
         </div>
 
-        <!-- COLLAGE DERECHO -->
         <div class="collage-lateral" id="collageDerecho"></div>
-
     </div>
 
-    <!-- ELEMENTOS OCULTOS PARA EL COLLAGE LATERAL -->
     <div style="display:none;">
         {% for recuerdo in recuerdos %}
             {% if recuerdo.imagenes %}
                 {% for img in recuerdo.imagenes %}
-                    {% if not img.endswith('.webm') %}
+                    {% if not img.endswith('.webm') and not 'audio' in img %}
                         <img src="{{ img }}" class="foto-recuerdo-item" data-titulo="{{ recuerdo.titulo }}">
                     {% endif %}
                 {% endfor %}
@@ -338,7 +192,6 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
     <script>
         let mapCrear, markerCrear;
         let mediaRecorder;
@@ -348,7 +201,7 @@
         function manejarArchivosSeleccionados(input) {
             const textoSpan = document.getElementById('texto-archivos');
             if (input.files.length > 5) {
-                alert("Solo puedes seleccionar un máximo de 5 fotos o archivos por recuerdo.");
+                alert("Solo puedes seleccionar un máximo de 5 archivos por recuerdo.");
                 input.value = "";
                 textoSpan.innerText = "Ningún archivo seleccionado";
                 return;
