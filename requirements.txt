@@ -6,3 +6,4 @@ authlib
 itsdangerous
 Authlib
 httpx
+supabase

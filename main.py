@@ -1,7 +1,5 @@
-import shutil
 import os
 import json
-import httpx
 from typing import Optional, List
 from fastapi import FastAPI, Form, Request, UploadFile, File
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -9,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from authlib.integrations.starlette_client import OAuth
+from supabase import create_client, Client
 
 app = FastAPI()
 
@@ -18,10 +17,14 @@ os.makedirs("static/uploads", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-# CONFIGURACIÓN DE GOOGLE OAUTH Y DRIVE
+# CONFIGURACIÓN DE SUPABASE
+SUPABASE_URL = "https://squbkdoruoxuxfkhuxdi.supabase.co"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNxdWJrZG9ydW94dXhma2h1eGRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUwMzAwMzgsImV4cCI6MjEwMDYwNjAzOH0.hbjf2dbc2S3hKNu9hQy-KsHnhJ1stvjCLgUtnj8ZK8M"
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+# CONFIGURACIÓN DE GOOGLE OAUTH
 GOOGLE_CLIENT_ID = "317422632908-a3ms0fnt3gunf69vkm62776h9p3sjum6.apps.googleusercontent.com"
 GOOGLE_CLIENT_SECRET = "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"
-GOOGLE_DRIVE_FOLDER_ID = "1mwkS51Dlxx-H5coqaty9hNFOP8kJizj"
 
 oauth = OAuth()
 oauth.register(
@@ -29,12 +32,10 @@ oauth.register(
     client_id=GOOGLE_CLIENT_ID,
     client_secret=GOOGLE_CLIENT_SECRET,
     server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
-    client_kwargs={'scope': 'openid email profile https://www.googleapis.com/auth/drive.file'}
+    client_kwargs={'scope': 'openid email profile'}
 )
 
-# ARCHIVOS JSON PARA CREDENCIALES Y RECUERDOS LOCALES
 ARCHIVAR_CRED = "credenciales.json"
-ARCHIVO_RECUERDOS_LOCAL = "recuerdos.json"
 
 def cargar_credenciales():
     if not os.path.exists(ARCHIVAR_CRED):
@@ -48,9 +49,17 @@ def guardar_credenciales(creds):
     with open(ARCHIVAR_CRED, "w", encoding="utf-8") as f:
         json.dump(creds, f, ensure_ascii=False, indent=4)
 
-# --- SISTEMA HÍBRIDO OPTIMIZADO (LOCAL + DRIVE) ---
+# --- SISTEMA DE ALMACENAMIENTO EN SUPABASE ---
 def cargar_recuerdos(request: Request):
-    datos_iniciales = [
+    try:
+        response = supabase.table("recuerdos").select("*").order("id", desc=True).execute()
+        data = response.data
+        if data and len(data) > 0:
+            return data
+    except Exception as e:
+        print("Error al cargar desde Supabase:", e)
+    
+    return [
         {
             "id": 1,
             "titulo": "Nuestro primer día",
@@ -62,141 +71,29 @@ def cargar_recuerdos(request: Request):
             "videos": []
         }
     ]
-    
-    # 1. Intentar cargar primero desde Google Drive si hay sesión activa
-    access_token = obtener_token_acceso(request)
-    if access_token:
-        headers = {"Authorization": f"Bearer {access_token}"}
-        query = "name = 'recuerdos.json' and trashed = false"
-        try:
-            response = httpx.get("https://www.googleapis.com/drive/v3/files", headers=headers, params={"q": query}, timeout=8.0)
-            if response.status_code == 200:
-                files = response.json().get("files", [])
-                if files:
-                    file_id = files[0]["id"]
-                    content_res = httpx.get(f"https://www.googleapis.com/drive/v3/files/{file_id}?alt=media", headers=headers, timeout=8.0)
-                    if content_res.status_code == 200:
-                        data = content_res.json()
-                        if isinstance(data, list) and len(data) > 0:
-                            guardar_recuerdos_local(data)
-                            return data
-        except Exception as e:
-            print("Aviso al cargar desde Drive, usando respaldo local:", e)
 
-    # 2. Respaldo local si Drive no responde o no hay sesión
-    if os.path.exists(ARCHIVO_RECUERDOS_LOCAL):
-        try:
-            with open(ARCHIVO_RECUERDOS_LOCAL, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                if isinstance(data, list) and len(data) > 0:
-                    return data
-        except Exception as e:
-            print("Error al leer recuerdos locales:", e)
-        
-    return datos_iniciales
-
-def guardar_recuerdos_local(recuerdos):
-    try:
-        with open(ARCHIVO_RECUERDOS_LOCAL, "w", encoding="utf-8") as f:
-            json.dump(recuerdos, f, ensure_ascii=False, indent=4)
-    except Exception as e:
-        print("Error al guardar recuerdos localmente:", e)
-
-def sincronizar_drive(request: Request, recuerdos):
-    guardar_recuerdos_local(recuerdos)
-    
-    access_token = obtener_token_acceso(request)
-    if not access_token:
-        return
-
-    headers = {"Authorization": f"Bearer {access_token}"}
-    query = "name = 'recuerdos.json' and trashed = false"
-    json_data = json.dumps(recuerdos, ensure_ascii=False, indent=4)
-    
-    try:
-        response = httpx.get("https://www.googleapis.com/drive/v3/files", headers=headers, params={"q": query}, timeout=10.0)
-        file_id = None
-        if response.status_code == 200:
-            files = response.json().get("files", [])
-            if files:
-                file_id = files[0]["id"]
-        
-        if file_id:
-            httpx.patch(
-                f"https://www.googleapis.com/upload/drive/v3/files/{file_id}?uploadType=media",
-                headers={**headers, "Content-Type": "application/json"},
-                content=json_data,
-                timeout=15.0
-            )
-        else:
-            metadata = {"name": "recuerdos.json"}
-            create_res = httpx.post(
-                "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
-                headers=headers,
-                files={
-                    "data": ("metadata", json.dumps(metadata), "application/json"),
-                    "file": ("recuerdos.json", json_data, "application/json")
-                },
-                timeout=15.0
-            )
-            if create_res.status_code in [200, 201]:
-                new_file_id = create_res.json().get("id")
-                if new_file_id:
-                    httpx.post(
-                        f"https://www.googleapis.com/drive/v3/files/{new_file_id}/permissions",
-                        headers=headers,
-                        json={"role": "reader", "type": "anyone"},
-                        timeout=10.0
-                    )
-    except Exception as e:
-        print("Excepción al sincronizar con Drive:", e)
-
-def obtener_token_acceso(request: Request):
-    token = request.session.get("token")
-    if token and "access_token" in token:
-        return token["access_token"]
-    return None
-
-def subir_archivo_drive(request: Request, archivo: UploadFile, extensiones_video):
-    access_token = obtener_token_acceso(request)
-    if not access_token or not archivo or not archivo.filename:
+def subir_archivo_supabase(archivo: UploadFile, extensiones_video):
+    if not archivo or not archivo.filename or archivo.filename.strip() == "":
         return None, False
-
-    headers = {"Authorization": f"Bearer {access_token}"}
-    metadata = {
-        "name": archivo.filename,
-        "parents": [GOOGLE_DRIVE_FOLDER_ID]
-    }
     
     try:
         contenido = archivo.file.read()
-        response = httpx.post(
-            "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
-            headers=headers,
-            files={
-                "data": ("metadata", json.dumps(metadata), "application/json"),
-                "file": (archivo.filename, contenido, archivo.content_type or "application/octet-stream")
-            },
-            timeout=15.0
+        file_path = f"recuerdos_{archivo.filename}"
+        
+        supabase.storage.from_("multimedia").upload(
+            path=file_path,
+            file=contenido,
+            file_options={"content-type": archivo.content_type or "application/octet-stream", "upsert": "true"}
         )
         
-        if response.status_code in [200, 201]:
-            file_data = response.json()
-            file_id = file_data.get("id")
-            
-            httpx.post(
-                f"https://www.googleapis.com/drive/v3/files/{file_id}/permissions",
-                headers=headers,
-                json={"role": "reader", "type": "anyone"},
-                timeout=10.0
-            )
-            
-            file_url = f"https://lh3.googleusercontent.com/d/{file_id}"
-            es_video = (archivo.content_type and archivo.content_type.startswith("video")) or \
-                       archivo.filename.lower().endswith(extensiones_video)
-            return file_url, es_video
+        public_url_res = supabase.storage.from_("multimedia").get_public_url(file_path)
+        file_url = public_url_res
+        
+        es_video = (archivo.content_type and archivo.content_type.startswith("video")) or \
+                   archivo.filename.lower().endswith(extensiones_video)
+        return file_url, es_video
     except Exception as e:
-        print("Error al subir archivo a Drive:", e)
+        print("Error al subir archivo a Supabase Storage:", e)
         
     return None, False
 
@@ -231,8 +128,7 @@ async def login_google(request: Request):
 async def auth_callback(request: Request):
     try:
         token = await oauth.google.authorize_access_token(request)
-        request.session["token"] = token
-        user_info = token.get('userinfo')
+        user_info = await oauth.google.parse_id_token(request, token)
         if user_info and user_info.get("email"):
             email_usuario = user_info["email"]
             
@@ -293,11 +189,10 @@ def muro(request: Request):
     if not request.session.get("usuario"):
         return RedirectResponse(url="/login", status_code=303)
         
-    recuerdos = cargar_recuerdos(request)
     return templates.TemplateResponse(
         request=request, 
         name="muro.html", 
-        context={"recuerdos": recuerdos}
+        context={}
     )
 
 @app.get("/linea-del-tiempo", response_class=HTMLResponse)
@@ -325,24 +220,19 @@ async def crear_recuerdo(
     if not request.session.get("usuario"):
         return RedirectResponse(url="/login", status_code=303)
 
-    recuerdos = cargar_recuerdos(request)
-    nuevo_id = max([r["id"] for r in recuerdos], default=0) + 1
-    
     rutas_imagenes = []
     rutas_videos = []
     EXT_VIDEOS = ('.mp4', '.mov', '.avi', '.mkv', '.webm')
 
     for archivo in archivos[:5]:
-        if archivo and archivo.filename and archivo.filename.strip() != "":
-            url_archivo, es_video = subir_archivo_drive(request, archivo, EXT_VIDEOS)
-            if url_archivo:
-                if es_video:
-                    rutas_videos.append(url_archivo)
-                else:
-                    rutas_imagenes.append(url_archivo)
+        url_archivo, es_video = subir_archivo_supabase(archivo, EXT_VIDEOS)
+        if url_archivo:
+            if es_video:
+                rutas_videos.append(url_archivo)
+            else:
+                rutas_imagenes.append(url_archivo)
 
     nuevo_recuerdo = {
-        "id": nuevo_id,
         "titulo": titulo,
         "fecha": fecha,
         "lugar": lugar,
@@ -352,8 +242,11 @@ async def crear_recuerdo(
         "videos": rutas_videos
     }
     
-    recuerdos.insert(0, nuevo_recuerdo)
-    sincronizar_drive(request, recuerdos)
+    try:
+        supabase.table("recuerdos").insert(nuevo_recuerdo).execute()
+    except Exception as e:
+        print("Error al insertar en Supabase:", e)
+
     return RedirectResponse(url="/linea-del-tiempo", status_code=303)
 
 @app.delete("/recuerdos/{recuerdo_id}")
@@ -361,10 +254,11 @@ async def eliminar_recuerdo(request: Request, recuerdo_id: int):
     if not request.session.get("usuario"):
         return {"status": "error", "message": "No autorizado"}
 
-    recuerdos = cargar_recuerdos(request)
-    recuerdos = [r for r in recuerdos if r["id"] != recuerdo_id]
-    sincronizar_drive(request, recuerdos)
-    return {"status": "success", "message": "Recuerdo eliminado"}
+    try:
+        supabase.table("recuerdos").delete().eq("id", recuerdo_id).execute()
+        return {"status": "success", "message": "Recuerdo eliminado"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 @app.post("/recuerdos/{recuerdo_id}/editar")
 async def editar_recuerdo(
@@ -380,33 +274,33 @@ async def editar_recuerdo(
     if not request.session.get("usuario"):
         return RedirectResponse(url="/login", status_code=303)
 
-    recuerdos = cargar_recuerdos(request)
     EXT_VIDEOS = ('.mp4', '.mov', '.avi', '.mkv', '.webm')
-    
-    for r in recuerdos:
-        if r["id"] == recuerdo_id:
-            r["titulo"] = titulo
-            r["fecha"] = fecha
-            r["lugar"] = lugar
-            r["nota"] = nota
-            r["musica"] = musica
-            
-            nuevas_imgs = []
-            nuevos_vids = []
+    nuevas_imgs = []
+    nuevos_vids = []
 
-            for archivo in archivos[:5]:
-                if archivo and archivo.filename and archivo.filename.strip() != "":
-                    url_archivo, es_video = subir_archivo_drive(request, archivo, EXT_VIDEOS)
-                    if url_archivo:
-                        if es_video:
-                            nuevos_vids.append(url_archivo)
-                        else:
-                            nuevas_imgs.append(url_archivo)
+    for archivo in archivos[:5]:
+        url_archivo, es_video = subir_archivo_supabase(archivo, EXT_VIDEOS)
+        if url_archivo:
+            if es_video:
+                nuevos_vids.append(url_archivo)
+            else:
+                nuevas_imgs.append(url_archivo)
             
-            if nuevas_imgs or nuevos_vids:
-                r["imagenes"] = nuevas_imgs
-                r["videos"] = nuevos_vids
-            break
-            
-    sincronizar_drive(request, recuerdos)
+    datos_actualizados = {
+        "titulo": titulo,
+        "fecha": fecha,
+        "lugar": lugar,
+        "nota": nota,
+        "musica": musica
+    }
+    
+    if nuevas_imgs or nuevos_vids:
+        datos_actualizados["imagenes"] = nuevas_imgs
+        datos_actualizados["videos"] = nuevos_vids
+
+    try:
+        supabase.table("recuerdos").update(datos_actualizados).eq("id", recuerdo_id).execute()
+    except Exception as e:
+        print("Error al actualizar en Supabase:", e)
+        
     return RedirectResponse(url="/linea-del-tiempo", status_code=303)
