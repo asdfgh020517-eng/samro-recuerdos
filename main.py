@@ -90,10 +90,12 @@ def procesar_login(request: Request, usuario: str = Form(...), password: str = F
     else:
         return RedirectResponse(url="/login?error=1", status_code=303)
 
-# --- RUTAS DE LOGIN CON GOOGLE (restringido a ustedes dos) ---
+# --- RUTAS DE LOGIN CON GOOGLE (CORREGIDAS PARA HTTPS EN RENDER) ---
 @app.get("/login/google")
 async def login_google(request: Request):
     redirect_uri = request.url_for('auth_callback')
+    if str(redirect_uri).startswith("http://"):
+        redirect_uri = str(redirect_uri).replace("http://", "https://", 1)
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
 @app.get("/auth/callback")
