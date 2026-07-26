@@ -121,6 +121,12 @@
             cursor: zoom-in;
         }
 
+        .galeria-multimedia audio {
+            width: 100%;
+            grid-column: 1 / -1;
+            margin-top: 5px;
+        }
+
         /* MODALES */
         .modal {
             display: none;
@@ -250,18 +256,30 @@
             {% if recuerdo.imagenes or recuerdo.videos or recuerdo.imagen %}
             <div class="galeria-multimedia">
                 {% if recuerdo.imagen %}
-                <img src="{{ recuerdo.imagen }}" class="foto-recuerdo-item" alt="Foto" onclick="event.stopPropagation(); abrirPantallaCompletaDirecta('{{ recuerdo.id }}', 0)">
+                    {% if '.webm' in recuerdo.imagen or 'audio' in recuerdo.imagen %}
+                    <audio src="{{ recuerdo.imagen }}" controls onclick="event.stopPropagation();"></audio>
+                    {% else %}
+                    <img src="{{ recuerdo.imagen }}" class="foto-recuerdo-item" alt="Foto" onclick="event.stopPropagation(); abrirPantallaCompletaDirecta('{{ recuerdo.id }}', 0)">
+                    {% endif %}
                 {% endif %}
 
                 {% if recuerdo.imagenes %}
                 {% for img in recuerdo.imagenes %}
-                <img src="{{ img }}" class="foto-recuerdo-item" alt="Foto del recuerdo" data-index="{{ loop.index0 }}" onclick="event.stopPropagation(); abrirPantallaCompletaDirecta('{{ recuerdo.id }}', Number(this.dataset.index))">
+                    {% if '.webm' in img or 'audio' in img %}
+                    <audio src="{{ img }}" controls onclick="event.stopPropagation();"></audio>
+                    {% else %}
+                    <img src="{{ img }}" class="foto-recuerdo-item" alt="Foto del recuerdo" data-index="{{ loop.index0 }}" onclick="event.stopPropagation(); abrirPantallaCompletaDirecta('{{ recuerdo.id }}', Number(this.dataset.index))">
+                    {% endif %}
                 {% endfor %}
                 {% endif %}
 
                 {% if recuerdo.videos %}
                 {% for vid in recuerdo.videos %}
-                <video src="{{ vid }}" class="video-recuerdo-item" controls onclick="event.stopPropagation();"></video>
+                    {% if '.webm' in vid or 'audio' in vid %}
+                    <audio src="{{ vid }}" controls onclick="event.stopPropagation();"></audio>
+                    {% else %}
+                    <video src="{{ vid }}" class="video-recuerdo-item" controls onclick="event.stopPropagation();"></video>
+                    {% endif %}
                 {% endfor %}
                 {% endif %}
             </div>
@@ -330,7 +348,7 @@
                 <input type="url" id="edit-musica" name="musica" placeholder="🎵 Link de canción (Opcional)">
 
                 <label style="font-size: 14px; color: #555;">📸 🎥 Cambiar Fotos/Videos (Hasta 5):</label>
-                <input type="file" name="archivos" accept="image/*,video/*" multiple onchange="validarLimiteArchivos(this)">
+                <input type="file" name="archivos" accept="image/*,video/*,audio/*" multiple onchange="validarLimiteArchivos(this)">
 
                 <button type="submit" style="margin-top: 15px;">Guardar Cambios 💾</button>
             </form>
@@ -348,7 +366,7 @@
 
         function validarLimiteArchivos(input) {
             if (input.files.length > 5) {
-                alert("Solo puedes seleccionar un máximo de 5 fotos o videos por recuerdo.");
+                alert("Solo puedes seleccionar un máximo de 5 archivos por recuerdo.");
                 input.value = "";
             }
         }
