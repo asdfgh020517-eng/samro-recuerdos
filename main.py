@@ -94,6 +94,7 @@ def cargar_recuerdos_drive(request: Request):
 def guardar_recuerdos_drive(request: Request, recuerdos):
     access_token = obtener_token_acceso(request)
     if not access_token:
+        print("Error al guardar: No hay access_token en la sesión.")
         return
 
     headers = {"Authorization": f"Bearer {access_token}"}
@@ -107,28 +108,32 @@ def guardar_recuerdos_drive(request: Request, recuerdos):
             
             if files:
                 file_id = files[0]["id"]
-                httpx.patch(
+                update_res = httpx.patch(
                     f"https://www.googleapis.com/upload/drive/v3/files/{file_id}?uploadType=media",
                     headers={**headers, "Content-Type": "application/json"},
                     content=json_data,
-                    timeout=10.0
+                    timeout=15.0
                 )
+                print("Resultado actualización en Drive:", update_res.status_code)
             else:
                 metadata = {
                     "name": "recuerdos.json",
                     "parents": [GOOGLE_DRIVE_FOLDER_ID]
                 }
-                httpx.post(
+                create_res = httpx.post(
                     "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
                     headers=headers,
                     files={
                         "data": ("metadata", json.dumps(metadata), "application/json"),
                         "file": ("recuerdos.json", json_data, "application/json")
                     },
-                    timeout=10.0
+                    timeout=15.0
                 )
+                print("Resultado creación en Drive:", create_res.status_code, create_res.text)
+        else:
+            print("Error al consultar Drive para guardar:", response.status_code, response.text)
     except Exception as e:
-        print("Error al guardar en Drive:", e)
+        print("Excepción al guardar en Drive:", e)
 
 def subir_archivo_drive(request: Request, archivo: UploadFile, extensiones_video):
     access_token = obtener_token_acceso(request)
