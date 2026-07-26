@@ -2,33 +2,49 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Iniciar Sesión - SamRO Recuerdos ❤️</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#d81b60">
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
 
     <style>
+        html, body {
+            overflow-x: hidden;
+            width: 100%;
+            max-width: 100vw;
+            box-sizing: border-box;
+        }
+
+        *, *:before, *:after {
+            box-sizing: inherit;
+        }
+
         body {
             background-color: #ffe6ed;
             font-family: Arial, sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
+            padding: 15px;
         }
 
         .card-login {
             background: #ffffff;
-            padding: 35px 30px;
+            padding: 30px 20px;
             border-radius: 18px;
             box-shadow: 0 10px 25px rgba(216, 27, 96, 0.15);
-            width: 90%;
+            width: 100%;
             max-width: 380px;
             text-align: center;
             border: 1px solid #ffccd5;
+            box-sizing: border-box;
         }
 
         .titulo-login {
@@ -100,11 +116,11 @@
 
         .form-group input {
             width: 100%;
-            padding: 11px;
+            padding: 12px;
             border: 1px solid #ddd;
             border-radius: 8px;
             box-sizing: border-box;
-            font-size: 14px;
+            font-size: 16px; /* Evita zoom automático en celulares */
         }
 
         .btn-ingresar {
