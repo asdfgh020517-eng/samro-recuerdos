@@ -102,6 +102,7 @@ def guardar_recuerdos_drive(request: Request, recuerdos):
     json_data = json.dumps(recuerdos, ensure_ascii=False, indent=4)
     
     try:
+        # Buscamos directamente dentro de la carpeta SamroRecuerdos
         response = httpx.get("https://www.googleapis.com/drive/v3/files", headers=headers, params={"q": query}, timeout=10.0)
         
         file_id = None
@@ -111,6 +112,7 @@ def guardar_recuerdos_drive(request: Request, recuerdos):
                 file_id = files[0]["id"]
         
         if file_id:
+            # Si el archivo ya existe dentro de la carpeta, lo actualizamos
             update_res = httpx.patch(
                 f"https://www.googleapis.com/upload/drive/v3/files/{file_id}?uploadType=media",
                 headers={**headers, "Content-Type": "application/json"},
@@ -119,6 +121,7 @@ def guardar_recuerdos_drive(request: Request, recuerdos):
             )
             print("Resultado actualización en Drive:", update_res.status_code)
         else:
+            # Si no existe, lo creamos asignando explícitamente la carpeta como padre
             metadata = {
                 "name": "recuerdos.json",
                 "parents": [GOOGLE_DRIVE_FOLDER_ID]
