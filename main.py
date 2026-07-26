@@ -47,7 +47,7 @@ def guardar_credenciales(creds):
     with open(ARCHIVAR_CRED, "w", encoding="utf-8") as f:
         json.dump(creds, f, ensure_ascii=False, indent=4)
 
-# --- FUNCIONES DE GOOGLE DRIVE PARA PERSISTENCIA ---
+# --- FUNCIONES DE GOOGLE DRIVE OPTIMIZADAS ---
 def obtener_token_acceso(request: Request):
     token = request.session.get("token")
     if token and "access_token" in token:
@@ -76,14 +76,16 @@ def cargar_recuerdos_drive(request: Request):
     query = f"'{GOOGLE_DRIVE_FOLDER_ID}' in parents and name = 'recuerdos.json' and trashed = false"
     
     try:
-        response = httpx.get("https://www.googleapis.com/drive/v3/files", headers=headers, params={"q": query})
+        response = httpx.get("https://www.googleapis.com/drive/v3/files", headers=headers, params={"q": query}, timeout=10.0)
         if response.status_code == 200:
             files = response.json().get("files", [])
             if files:
                 file_id = files[0]["id"]
-                content_res = httpx.get(f"https://www.googleapis.com/drive/v3/files/{file_id}?alt=media", headers=headers)
+                content_res = httpx.get(f"https://www.googleapis.com/drive/v3/files/{file_id}?alt=media", headers=headers, timeout=10.0)
                 if content_res.status_code == 200:
-                    return content_res.json()
+                    data = content_res.json()
+                    if isinstance(data, list) and len(data) > 0:
+                        return data
     except Exception as e:
         print("Error al cargar desde Drive:", e)
         
@@ -96,19 +98,20 @@ def guardar_recuerdos_drive(request: Request, recuerdos):
 
     headers = {"Authorization": f"Bearer {access_token}"}
     query = f"'{GOOGLE_DRIVE_FOLDER_ID}' in parents and name = 'recuerdos.json' and trashed = false"
+    json_data = json.dumps(recuerdos, ensure_ascii=False, indent=4)
     
     try:
-        response = httpx.get("https://www.googleapis.com/drive/v3/files", headers=headers, params={"q": query})
+        response = httpx.get("https://www.googleapis.com/drive/v3/files", headers=headers, params={"q": query}, timeout=10.0)
         if response.status_code == 200:
             files = response.json().get("files", [])
-            json_data = json.dumps(recuerdos, ensure_ascii=False, indent=4)
             
             if files:
                 file_id = files[0]["id"]
                 httpx.patch(
                     f"https://www.googleapis.com/upload/drive/v3/files/{file_id}?uploadType=media",
                     headers={**headers, "Content-Type": "application/json"},
-                    content=json_data
+                    content=json_data,
+                    timeout=10.0
                 )
             else:
                 metadata = {
@@ -121,7 +124,8 @@ def guardar_recuerdos_drive(request: Request, recuerdos):
                     files={
                         "data": ("metadata", json.dumps(metadata), "application/json"),
                         "file": ("recuerdos.json", json_data, "application/json")
-                    }
+                    },
+                    timeout=10.0
                 )
     except Exception as e:
         print("Error al guardar en Drive:", e)
@@ -145,18 +149,19 @@ def subir_archivo_drive(request: Request, archivo: UploadFile, extensiones_video
             files={
                 "data": ("metadata", json.dumps(metadata), "application/json"),
                 "file": (archivo.filename, contenido, archivo.content_type or "application/octet-stream")
-            }
+            },
+            timeout=15.0
         )
         
         if response.status_code in [200, 201]:
             file_data = response.json()
             file_id = file_data.get("id")
             
-            # Hacer el archivo públicamente accesible para lectura directa en el HTML
             httpx.post(
                 f"https://www.googleapis.com/drive/v3/files/{file_id}/permissions",
                 headers=headers,
-                json={"role": "reader", "type": "anyone"}
+                json={"role": "reader", "type": "anyone"},
+                timeout=10.0
             )
             
             file_url = f"https://drive.google.com/uc?export=view&id={file_id}"
