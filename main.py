@@ -1,6 +1,7 @@
 import shutil
 import os
 import json
+import httpx
 from typing import Optional, List
 from fastapi import FastAPI, Form, Request, UploadFile, File
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -17,9 +18,10 @@ os.makedirs("static/uploads", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-# CONFIGURACIÓN DE GOOGLE OAUTH
+# CONFIGURACIÓN DE GOOGLE OAUTH Y DRIVE
 GOOGLE_CLIENT_ID = "317422632908-a3ms0fnt3gunf69vkm62776h9p3sjum6.apps.googleusercontent.com"
 GOOGLE_CLIENT_SECRET = "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"
+GOOGLE_DRIVE_FOLDER_ID = "1mwkS51Dlxx-H5coqaty9hNFOP8kJizj"
 
 oauth = OAuth()
 oauth.register(
@@ -27,11 +29,10 @@ oauth.register(
     client_id=GOOGLE_CLIENT_ID,
     client_secret=GOOGLE_CLIENT_SECRET,
     server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
-    client_kwargs={'scope': 'openid email profile'}
+    client_kwargs={'scope': 'openid email profile https://www.googleapis.com/auth/drive.file'}
 )
 
-# ARCHIVOS JSON PARA PERSISTENCIA
-ARCHIVAR_DATOS = "recuerdos.json"
+# ARCHIVOS JSON PARA CREDENCIALES LOCALES
 ARCHIVAR_CRED = "credenciales.json"
 
 def cargar_credenciales():
@@ -46,29 +47,126 @@ def guardar_credenciales(creds):
     with open(ARCHIVAR_CRED, "w", encoding="utf-8") as f:
         json.dump(creds, f, ensure_ascii=False, indent=4)
 
-def cargar_recuerdos():
-    if not os.path.exists(ARCHIVAR_DATOS):
-        datos_iniciales = [
-            {
-                "id": 1,
-                "titulo": "Nuestro primer día",
-                "fecha": "2026-01-01",
-                "lugar": "Huancayo",
-                "nota": "Un día super especial donde comenzamos este gran proyecto juntos.",
-                "musica": "",
-                "imagenes": [],
-                "videos": []
-            }
-        ]
-        guardar_recuerdos(datos_iniciales)
-        return datos_iniciales
-    
-    with open(ARCHIVAR_DATOS, "r", encoding="utf-8") as f:
-        return json.load(f)
+# --- FUNCIONES DE GOOGLE DRIVE PARA PERSISTENCIA ---
+def obtener_token_acceso(request: Request):
+    token = request.session.get("token")
+    if token and "access_token" in token:
+        return token["access_token"]
+    return None
 
-def guardar_recuerdos(recuerdos):
-    with open(ARCHIVAR_DATOS, "w", encoding="utf-8") as f:
-        json.dump(recuerdos, f, ensure_ascii=False, indent=4)
+def cargar_recuerdos_drive(request: Request):
+    access_token = obtener_token_acceso(request)
+    datos_iniciales = [
+        {
+            "id": 1,
+            "titulo": "Nuestro primer día",
+            "fecha": "2026-01-01",
+            "lugar": "Huancayo",
+            "nota": "Un día super especial donde comenzamos este gran proyecto juntos.",
+            "musica": "",
+            "imagenes": [],
+            "videos": []
+        }
+    ]
+    
+    if not access_token:
+        return datos_iniciales
+
+    headers = {"Authorization": f"Bearer {access_token}"}
+    query = f"'{GOOGLE_DRIVE_FOLDER_ID}' in parents and name = 'recuerdos.json' and trashed = false"
+    
+    try:
+        response = httpx.get("https://www.googleapis.com/drive/v3/files", headers=headers, params={"q": query})
+        if response.status_code == 200:
+            files = response.json().get("files", [])
+            if files:
+                file_id = files[0]["id"]
+                content_res = httpx.get(f"https://www.googleapis.com/drive/v3/files/{file_id}?alt=media", headers=headers)
+                if content_res.status_code == 200:
+                    return content_res.json()
+    except Exception as e:
+        print("Error al cargar desde Drive:", e)
+        
+    return datos_iniciales
+
+def guardar_recuerdos_drive(request: Request, recuerdos):
+    access_token = obtener_token_acceso(request)
+    if not access_token:
+        return
+
+    headers = {"Authorization": f"Bearer {access_token}"}
+    query = f"'{GOOGLE_DRIVE_FOLDER_ID}' in parents and name = 'recuerdos.json' and trashed = false"
+    
+    try:
+        response = httpx.get("https://www.googleapis.com/drive/v3/files", headers=headers, params={"q": query})
+        if response.status_code == 200:
+            files = response.json().get("files", [])
+            json_data = json.dumps(recuerdos, ensure_ascii=False, indent=4)
+            
+            if files:
+                file_id = files[0]["id"]
+                httpx.patch(
+                    f"https://www.googleapis.com/upload/drive/v3/files/{file_id}?uploadType=media",
+                    headers={**headers, "Content-Type": "application/json"},
+                    content=json_data
+                )
+            else:
+                metadata = {
+                    "name": "recuerdos.json",
+                    "parents": [GOOGLE_DRIVE_FOLDER_ID]
+                }
+                httpx.post(
+                    "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
+                    headers=headers,
+                    files={
+                        "data": ("metadata", json.dumps(metadata), "application/json"),
+                        "file": ("recuerdos.json", json_data, "application/json")
+                    }
+                )
+    except Exception as e:
+        print("Error al guardar en Drive:", e)
+
+def subir_archivo_drive(request: Request, archivo: UploadFile, extensiones_video):
+    access_token = obtener_token_acceso(request)
+    if not access_token or not archivo or not archivo.filename:
+        return None, False
+
+    headers = {"Authorization": f"Bearer {access_token}"}
+    metadata = {
+        "name": archivo.filename,
+        "parents": [GOOGLE_DRIVE_FOLDER_ID]
+    }
+    
+    try:
+        contenido = archivo.file.read()
+        response = httpx.post(
+            "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
+            headers=headers,
+            files={
+                "data": ("metadata", json.dumps(metadata), "application/json"),
+                "file": (archivo.filename, contenido, archivo.content_type or "application/octet-stream")
+            }
+        )
+        
+        if response.status_code in [200, 201]:
+            file_data = response.json()
+            file_id = file_data.get("id")
+            
+            # Hacer el archivo públicamente accesible para lectura directa en el HTML
+            httpx.post(
+                f"https://www.googleapis.com/drive/v3/files/{file_id}/permissions",
+                headers=headers,
+                json={"role": "reader", "type": "anyone"}
+            )
+            
+            file_url = f"https://drive.google.com/uc?export=view&id={file_id}"
+            es_video = (archivo.content_type and archivo.content_type.startswith("video")) or \
+                       archivo.filename.lower().endswith(extensiones_video)
+            return file_url, es_video
+    except Exception as e:
+        print("Error al subir archivo a Drive:", e)
+        
+    return None, False
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -90,7 +188,6 @@ def procesar_login(request: Request, usuario: str = Form(...), password: str = F
     else:
         return RedirectResponse(url="/login?error=1", status_code=303)
 
-# --- RUTAS DE LOGIN CON GOOGLE (CORREGIDAS PARA HTTPS EN RENDER) ---
 @app.get("/login/google")
 async def login_google(request: Request):
     redirect_uri = request.url_for('auth_callback')
@@ -102,6 +199,7 @@ async def login_google(request: Request):
 async def auth_callback(request: Request):
     try:
         token = await oauth.google.authorize_access_token(request)
+        request.session["token"] = token
         user_info = token.get('userinfo')
         if user_info and user_info.get("email"):
             email_usuario = user_info["email"]
@@ -127,14 +225,12 @@ def cerrar_sesion(request: Request):
     request.session.clear()
     return RedirectResponse(url="/login", status_code=303)
 
-# --- RUTAS DE CONFIGURACIÓN Y CREDENCIALES LOCALES ---
 @app.get("/configuracion", response_class=HTMLResponse)
 def vista_configuracion(request: Request):
     if not request.session.get("usuario"):
         return RedirectResponse(url="/login", status_code=303)
     
     creds = cargar_credenciales()
-
     return templates.TemplateResponse(
         request=request, 
         name="configuracion.html",
@@ -158,7 +254,6 @@ def actualizar_credenciales(
         "password": password_nueva
     }
     guardar_credenciales(nuevas_creds)
-    
     return RedirectResponse(url="/configuracion?exito=1", status_code=303)
 
 @app.get("/muro", response_class=HTMLResponse)
@@ -166,7 +261,7 @@ def muro(request: Request):
     if not request.session.get("usuario"):
         return RedirectResponse(url="/login", status_code=303)
         
-    recuerdos = cargar_recuerdos()
+    recuerdos = cargar_recuerdos_drive(request)
     return templates.TemplateResponse(
         request=request, 
         name="muro.html", 
@@ -178,7 +273,7 @@ def linea_del_tiempo(request: Request):
     if not request.session.get("usuario"):
         return RedirectResponse(url="/login", status_code=303)
 
-    recuerdos = cargar_recuerdos()
+    recuerdos = cargar_recuerdos_drive(request)
     return templates.TemplateResponse(
         request=request, 
         name="linea.html", 
@@ -198,7 +293,7 @@ async def crear_recuerdo(
     if not request.session.get("usuario"):
         return RedirectResponse(url="/login", status_code=303)
 
-    recuerdos = cargar_recuerdos()
+    recuerdos = cargar_recuerdos_drive(request)
     nuevo_id = max([r["id"] for r in recuerdos], default=0) + 1
     
     rutas_imagenes = []
@@ -207,17 +302,12 @@ async def crear_recuerdo(
 
     for archivo in archivos[:5]:
         if archivo and archivo.filename and archivo.filename.strip() != "":
-            ruta_disco = f"static/uploads/{archivo.filename}"
-            with open(ruta_disco, "wb") as buffer:
-                shutil.copyfileobj(archivo.file, buffer)
-            
-            es_video = (archivo.content_type and archivo.content_type.startswith("video")) or \
-                       archivo.filename.lower().endswith(EXT_VIDEOS)
-
-            if es_video:
-                rutas_videos.append(f"/static/uploads/{archivo.filename}")
-            else:
-                rutas_imagenes.append(f"/static/uploads/{archivo.filename}")
+            url_archivo, es_video = subir_archivo_drive(request, archivo, EXT_VIDEOS)
+            if url_archivo:
+                if es_video:
+                    rutas_videos.append(url_archivo)
+                else:
+                    rutas_imagenes.append(url_archivo)
 
     nuevo_recuerdo = {
         "id": nuevo_id,
@@ -231,7 +321,7 @@ async def crear_recuerdo(
     }
     
     recuerdos.insert(0, nuevo_recuerdo)
-    guardar_recuerdos(recuerdos)
+    guardar_recuerdos_drive(request, recuerdos)
     return RedirectResponse(url="/muro", status_code=303)
 
 @app.delete("/recuerdos/{recuerdo_id}")
@@ -239,9 +329,9 @@ async def eliminar_recuerdo(request: Request, recuerdo_id: int):
     if not request.session.get("usuario"):
         return {"status": "error", "message": "No autorizado"}
 
-    recuerdos = cargar_recuerdos()
+    recuerdos = cargar_recuerdos_drive(request)
     recuerdos = [r for r in recuerdos if r["id"] != recuerdo_id]
-    guardar_recuerdos(recuerdos)
+    guardar_recuerdos_drive(request, recuerdos)
     return {"status": "success", "message": "Recuerdo eliminado"}
 
 @app.post("/recuerdos/{recuerdo_id}/editar")
@@ -258,7 +348,7 @@ async def editar_recuerdo(
     if not request.session.get("usuario"):
         return RedirectResponse(url="/login", status_code=303)
 
-    recuerdos = cargar_recuerdos()
+    recuerdos = cargar_recuerdos_drive(request)
     EXT_VIDEOS = ('.mp4', '.mov', '.avi', '.mkv', '.webm')
     
     for r in recuerdos:
@@ -274,23 +364,17 @@ async def editar_recuerdo(
 
             for archivo in archivos[:5]:
                 if archivo and archivo.filename and archivo.filename.strip() != "":
-                    ruta_disco = f"static/uploads/{archivo.filename}"
-                    with open(ruta_disco, "wb") as buffer:
-                        shutil.copyfileobj(archivo.file, buffer)
-                    
-                    es_video = (archivo.content_type and archivo.content_type.startswith("video")) or \
-                               archivo.filename.lower().endswith(EXT_VIDEOS)
-
-                    if es_video:
-                        nuevos_vids.append(f"/static/uploads/{archivo.filename}")
-                    else:
-                        nuevas_imgs.append(f"/static/uploads/{archivo.filename}")
+                    url_archivo, es_video = subir_archivo_drive(request, archivo, EXT_VIDEOS)
+                    if url_archivo:
+                        if es_video:
+                            nuevos_vids.append(url_archivo)
+                        else:
+                            nuevas_imgs.append(url_archivo)
             
             if nuevas_imgs or nuevos_vids:
                 r["imagenes"] = nuevas_imgs
                 r["videos"] = nuevos_vids
-                r["imagen"] = None
             break
             
-    guardar_recuerdos(recuerdos)
+    guardar_recuerdos_drive(request, recuerdos)
     return RedirectResponse(url="/muro", status_code=303)
