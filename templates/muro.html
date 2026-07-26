@@ -117,7 +117,7 @@
             background-color: #1565c0;
         }
 
-        /* ESTILO DEL BOTÓN MORADO PARA ABRIR OTRA PESTAÑA */
+        /* ESTILO DEL BOTÓN MORADO */
         .contenedor-btn-ver-recuerdos {
             text-align: center;
             margin: 25px 0;
@@ -128,7 +128,9 @@
             color: #ffffff;
             border: none;
             padding: 16px 28px;
-            font-size: 18px;
+            font-size: 24px;
+            font-family: 'Dancing Script', cursive;
+            letter-spacing: 0.5px;
             font-weight: bold;
             border-radius: 30px;
             cursor: pointer;
@@ -251,10 +253,10 @@
                 </form>
             </section>
 
-            <!-- BOTÓN MORADO PARA ABRIR RECUERDOS EN OTRA PESTAÑA -->
+            <!-- BOTÓN MORADO PARA VER RECUERDOS (MISMA PESTAÑA) -->
             <div class="contenedor-btn-ver-recuerdos">
-                <a href="/linea-del-tiempo" target="_blank" class="btn-ver-mis-recuerdos">
-                    <span>🔮</span> <span>Ver mis recuerdos en otra pestaña</span> <span>🚀</span>
+                <a href="/linea-del-tiempo" class="btn-ver-mis-recuerdos">
+                    <span>🔮</span> <span>Ver mis recuerdos</span> <span>🚀</span>
                 </a>
             </div>
         </div>
@@ -484,7 +486,8 @@
                 if (imgUrl && imgUrl.trim() !== "") {
                     const card = document.createElement('div');
                     card.className = 'tarjeta-foto-collage';
-                    card.onclick = () => window.open('/linea-del-tiempo', '_blank');
+                    // Se quita '_blank' para abrir en la misma pestaña
+                    card.onclick = () => window.location.href = '/linea-del-tiempo';
 
                     card.style.setProperty('--rotacion', `${angulos[i % angulos.length]}deg`);
                     card.innerHTML = `<img src="${imgUrl}" alt="${titulo}"><p>${titulo}</p>`;
